@@ -1,0 +1,54 @@
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(plotly)
+library(hrbrthemes)
+```
+
+```{r}
+cdc_dec20 = read.csv('COVID_Cases_Restricted_Detailed_12042020.csv')
+
+head(cdc_dec20,10)
+glimpse(cdc_dec20)
+```
+
+```{r}
+test = select(cdc_dec20, pos_spec_dt) %>% 
+  filter(!is.na(pos_spec_dt)) %>% 
+  filter(pos_spec_dt != '') %>% 
+  head(10)
+
+test = test %>% 
+  mutate(pos_spec_dt = as.Date(pos_spec_dt)) %>% 
+  arrange(pos_spec_dt) %>% 
+  group_by(pos_spec_dt) %>% 
+  summarize(
+    n = n()
+  )
+
+test
+```
+
+```{r}
+cdc_dec20_filtered = select(cdc_dec20, pos_spec_dt) %>% 
+  filter(pos_spec_dt != '')
+
+cdc_dec20_filtered = cdc_dec20_filtered %>% 
+  mutate(pos_spec_dt = as.Date(pos_spec_dt)) %>% 
+  arrange(pos_spec_dt) %>% 
+  group_by(pos_spec_dt) %>% 
+  summarize(
+    n = n()
+  )
+
+cdc_dec20_ts = ts(cdc_dec20_filtered)
+```
+
+```{r}
+p = ggplot(data = cdc_dec20_filtered, aes(x = pos_spec_dt, y = n)) + geom_area(fill = 'orange', alpha = 0.5) +
+  geom_line(color = 'blue') +
+  theme_ipsum()
+
+p = ggplotly(p)
+p
+```
