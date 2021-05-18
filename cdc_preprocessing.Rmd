@@ -1,8 +1,17 @@
 ```{r}
 library(tidyverse)
+
+#visualization
 library(ggplot2)
 library(plotly)
 library(hrbrthemes)
+
+#time series
+library(xts)
+library(astsa)
+library(forecast)
+library(tsbox)
+library(tseries)
 ```
 
 ```{r}
@@ -41,7 +50,9 @@ cdc_dec20_filtered = cdc_dec20_filtered %>%
     n = n()
   )
 
-cdc_dec20_ts = ts(cdc_dec20_filtered)
+cdc_dec20_ts = xts(as.numeric(cdc_dec20_filtered$n), order.by = as.Date(cdc_dec20_filtered$pos_spec_dt))
+
+str(cdc_dec20_ts)
 ```
 
 ```{r}
@@ -51,4 +62,61 @@ p = ggplot(data = cdc_dec20_filtered, aes(x = pos_spec_dt, y = n)) + geom_area(f
 
 p = ggplotly(p)
 p
+```
+
+# Detrending by differencing
+```{r}
+cdc_d2_ts = 
+  diff(cdc_dec20_ts, lag = 1, differences = 1) %>% 
+  na.omit(.)
+
+#na.omit(cdc_d2_ts)
+  
+plot(cdc_d2_ts)
+```
+
+```{r}
+adf.test(cdc_d2_ts)
+```
+
+```{r}
+acf(cdc_d2_ts)
+```
+
+```{r}
+pacf(cdc_d2_ts)
+```
+
+```{r}
+# arima has a auto.arima function which gives us the ideal arima model based on our data.
+cdc_arima <- auto.arima(cdc_d2_ts)
+cdc_arima
+
+
+```
+
+```{r}
+# lets use the auto.arima function to forecast 3 weeks
+
+forecast1 <- forecast(cdc_arima, h=21)
+additional_deaths <- round(sum(forecast1$upper[,2]),0)
+# [1] 18589
+
+# total_number_of_deaths <- round(sum(dat_US_Analysis$new_deaths)+additional_deaths,0)
+# # [1] 171903
+
+plot(forecast1)
+
+```
+
+```{r}
+
+# lets use the auto.arima function to forecast 3 months
+forecast2 <- forecast(object = cdc_arima, h = 90)
+#additional_deaths2 <- round(sum(forecast2$upper[,2]),0)
+# [1] 82653
+
+#total_number_of_deaths2 <- round(sum(dat_US_Analysis$new_deaths)+additional_deaths2,0)
+# [1] 235967
+plot(forecast2)
 ```
