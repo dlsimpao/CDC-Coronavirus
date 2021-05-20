@@ -135,3 +135,29 @@ sample_cdc %>% group_by(current_status) %>% tally()
 #790740 - Conf, 49767 - Prob
 
 ```
+
+```{r}
+sample_cdc = sample_cdc %>% filter(hosp_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(icu_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(death_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(hc_work_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(pna_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(abxchest_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(acuterespdistress_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(mechvent_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(fever_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(sfever_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(chills_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(myalgia_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(runnose_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(sthroat_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(cough_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(sob_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(nauseavomit_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(headache_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(abdom_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(diarrhea_yn != "Missing")
+sample_cdc = sample_cdc %>% filter(medcond_yn != "Missing")
+
+sample_cdc
+```
