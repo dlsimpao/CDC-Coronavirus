@@ -120,3 +120,18 @@ forecast2 <- forecast(object = cdc_arima, h = 90)
 # [1] 235967
 plot(forecast2)
 ```
+
+# Classification
+
+```{r}
+
+set.seed(101)
+
+sample_cdc = sample_n(cdc_dec20,0.10*(nrow(cdc_dec20)))
+
+sample_cdc
+
+sample_cdc %>% group_by(current_status) %>% tally()
+#790740 - Conf, 49767 - Prob
+
+```
