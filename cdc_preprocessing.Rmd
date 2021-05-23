@@ -161,3 +161,138 @@ sample_cdc = sample_cdc %>% filter(medcond_yn != "Missing")
 
 sample_cdc
 ```
+### Dont Run
+
+```{r}
+
+#cdc_one = read.csv("C:/Users/Falak/Downloads/partial_one.csv")
+
+#cdc_one_filtered = cdc_one %>% filter(hosp_yn != "Missing") %>% filter(icu_yn != "Missing") %>% filter(death_yn != "Missing") %>% filter(hc_work_yn != "Missing") %>% #filter(pna_yn != "Missing") %>% filter(abxchest_yn != "Missing") %>% filter(acuterespdistress_yn != "Missing") %>% filter(mechvent_yn != "Missing") %>% filter(fever_yn != #"Missing") %>% filter(sfever_yn != "Missing") %>% filter(chills_yn != "Missing") %>% filter(myalgia_yn != "Missing") %>% filter(runnose_yn != "Missing")%>% filter(sthroat_yn != #"Missing")%>% filter(cough_yn != "Missing")%>% filter(sob_yn != "Missing") %>% filter(nauseavomit_yn != "Missing") %>% filter(headache_yn != "Missing") %>% filter(abdom_yn != #"Missing") %>% filter(diarrhea_yn != "Missing") %>% filter(medcond_yn != "Missing")
+
+
+#cdc_one_filtered
+
+```
+
+
+
+```{r}
+#cdc_two = read.csv("C:/Users/Falak/Downloads/partial_two.csv")
+
+#cdc_two_filtered = cdc_two %>% filter(hosp_yn != "Missing") %>% filter(icu_yn != "Missing") %>% filter(death_yn != "Missing") %>% filter(hc_work_yn != "Missing") %>% #filter(pna_yn != "Missing") %>% filter(abxchest_yn != "Missing") %>% filter(acuterespdistress_yn != "Missing") %>% filter(mechvent_yn != "Missing") %>% filter(fever_yn != #"Missing") %>% filter(sfever_yn != "Missing") %>% filter(chills_yn != "Missing") %>% filter(myalgia_yn != "Missing") %>% filter(runnose_yn != "Missing")%>% filter(sthroat_yn != #"Missing")%>% filter(cough_yn != "Missing")%>% filter(sob_yn != "Missing") %>% filter(nauseavomit_yn != "Missing") %>% filter(headache_yn != "Missing") %>% filter(abdom_yn != #"Missing") %>% filter(diarrhea_yn != "Missing") %>% filter(medcond_yn != "Missing")
+
+
+#cdc_two_filtered
+
+
+```
+
+
+
+```{r}
+
+#cdc_three_filtered = cdc_dec20 %>% filter(hosp_yn != "Missing") %>% filter(icu_yn != "Missing") %>% filter(death_yn != "Missing") %>% filter(hc_work_yn != "Missing") %>% #filter(pna_yn != "Missing") %>% filter(abxchest_yn != "Missing") %>% filter(acuterespdistress_yn != "Missing") %>% filter(mechvent_yn != "Missing") %>% filter(fever_yn != #"Missing") %>% filter(sfever_yn != "Missing") %>% filter(chills_yn != "Missing") %>% filter(myalgia_yn != "Missing") %>% filter(runnose_yn != "Missing")%>% filter(sthroat_yn != #"Missing")%>% filter(cough_yn != "Missing")%>% filter(sob_yn != "Missing") %>% filter(nauseavomit_yn != "Missing") %>% filter(headache_yn != "Missing") %>% filter(abdom_yn != #"Missing") %>% filter(diarrhea_yn != "Missing") %>% filter(medcond_yn != "Missing")
+
+
+#cdc_three_filtered
+
+
+```
+
+
+```{r}
+#563723
+
+#cdc_filtered = cdc_one_filtered %>% bind_rows(cdc_two_filtered) %>% bind_rows(cdc_three_filtered)
+
+#write.csv(cdc_filtered,file = "CDC_no_missing09_12_2020.csv",row.names = FALSE)
+
+```
+
+
+
+
+```{r}
+#cdc_filtered = cdc_filtered[complete.cases(cdc_filtered), ]
+
+#sapply(cdc_filtered, function(x) sum(is.na(x)))
+
+#cdc_filtered = cdc_filtered %>% filter(ï..race_ethnicity_combined != "Missing")
+
+#cdc_filtered[,c(1,2,4,7:27,29:31)] <- lapply(cdc_filtered[,c(1,2,4,7:27,29:31)],factor)
+
+#encode_data <- cdc_filtered[,11:27]
+
+#encoded_data <- one_hot(as.data.table(encode_data))
+
+#cdc_filtered = cdc_filtered %>% bind_cols(encoded_data)
+
+#cdc_filtered = cdc_filtered[,-c(11:27)]
+
+#write.csv(cdc_filtered,file = "CDC_encoded.csv",row.names = FALSE)
+
+```
+
+
+
+
+```{r}
+#register_google(key = "xxxxxxxxxxxxxxxxxx" )
+
+
+#test = as.data.frame(cdc_filtered$res_county)  %>% rename(county = "cdc_filtered$res_county") %>% distinct()
+
+#test[,1] <- as.character(test[,1])
+
+#county_locations = mutate_geocode(test,county)
+
+#write.csv(county_locations,file = "CDC_county_locations.csv",row.names = FALSE)
+
+```
+
+
+
+
+
+###### CLASSIFICATION #######
+
+```{r}
+# Encoded data 
+
+#cdc_2020 <- read.csv("C:/Users/Falak/Desktop/Spring Quarter '21/STA 160/CDC_encoded.csv")
+head(cdc_2020)
+# county locations data
+
+#county_locations <- read.csv("C:/Users/Falak/Desktop/Spring Quarter '21/STA 160/CDC_county_locations.csv")
+
+
+#names = c(1,2,4,7:10)
+
+#cdc_2020[,names] = lapply(cdc_2020[,names],factor)
+
+#head(cdc_2020)
+
+#age_hosp = cdc_2020 %>% group_by(age_group) %>% filter(hosp_yn == "Yes") %>%  summarise(hosp_yn) %>% tally()
+#age_patients = cdc_2020 %>% group_by(age_group) %>% tally()
+
+
+
+#perc_hosp = age_patients[1:9,] %>% cbind(age_hosp[,2])
+
+#colnames(perc_hosp) <- c("Age Group","Patients","Hospitalised")
+
+#perc_hosp = perc_hosp %>% mutate(percentage_hosp = (Hospitalised/Patients))
+
+#perc_hosp
+
+#head(cdc_2020)
+
+```
+
+
+```{r}
+#plot_intro(cdc_2020)
+
+#plot_correlation(cdc_2020[,7:10])
+
+```
