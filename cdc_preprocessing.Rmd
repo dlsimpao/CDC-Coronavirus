@@ -12,6 +12,9 @@ library(astsa)
 library(forecast)
 library(tsbox)
 library(tseries)
+
+#csv
+library(zoo)
 ```
 
 ```{r}
@@ -53,8 +56,9 @@ cdc_dec20_filtered = cdc_dec20_filtered %>%
 cdc_dec20_ts = xts(as.numeric(cdc_dec20_filtered$n), order.by = as.Date(cdc_dec20_filtered$pos_spec_dt))
 
 str(cdc_dec20_ts)
+#https://rstudio-pubs-static.s3.amazonaws.com/504487_1975b93a0ed04f33aab708cb536b8d0e.html
 
-#write.csv(cdc_dec20_ts, "cdc_dec20_ts.csv")
+write.zoo(cdc_dec20_ts, sep = ',', file = "cdc_dec20_ts.csv")
 ```
 
 
