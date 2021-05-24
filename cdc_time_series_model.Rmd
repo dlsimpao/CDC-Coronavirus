@@ -1,4 +1,4 @@
-```{r}
+```{r, messages = FALSE}
 library(tidyverse)
 
 #visualization
@@ -16,59 +16,58 @@ library(tseries)
 
 #IMPORT DATA
 ```{r}
-cdc_dec20_ts = read.csv('cdc_dec20_ts.csv') %>% 
+cdc_dec20_zoo = read.csv('cdc_dec20_ts.csv') %>% 
   rename(Date = X2020.01.01, Values = X2)
 
-cdc_preNov_ts =  cdc_dec20_ts %>% 
+cdc_preNov_zoo = cdc_dec20_zoo %>% 
   mutate(Date = as.Date(Date)) %>% 
   filter(Date <= as.Date("2020-10-31"))
 
-cdc_Nov2020_df = cdc_dec20_ts %>% 
+cdc_Nov2020_zoo = cdc_dec20_zoo %>% 
   mutate(Date = as.Date(Date)) %>% 
   filter(Date > as.Date("2020-10-31")) 
 
-cdc_Nov2020_ts = xts(cdc_Nov2020_df$Values, order.by = cdc_Nov2020_df$Date)
-cdc_Nov2020_ts
+
 ```
 
 #time series - base plot
 ```{r}
-plot(cdc_preNov_ts$Values, type = 'l')
+plot(cdc_preNov_zoo, type = 'l')
 ```
 #time series - ggplot
 ```{r}
-ggplot(data = cdc_preNov_ts, aes(x = Date, y = Values)) +
+ggplot(data = cdc_preNov_zoo, aes(x = Date, y = Values)) +
   geom_line() +
   xlab("")
 ```
 
 # Detrending by differencing
 ```{r}
-cdc_d2_ts = diff(cdc_preNov_ts$Values, lag = 1, differences = 1)
-cdc_preNov_ts = cdc_preNov_ts %>% mutate(diff = c(NA,cdc_d2_ts))
+cdc_d2_ts = diff(cdc_preNov_zoo$Values, lag = 1, differences = 1)
+cdc_preNov_zoo = cdc_preNov_zoo %>% mutate(diff = c(NA,cdc_d2_ts))
 #na.omit(cdc_d2_ts)
   
 plot(cdc_d2_ts, type = 'l')
-ggplot(data = as.data.frame(cdc_preNov_ts), aes(x = Date, y = diff)) +
+ggplot(data = as.data.frame(cdc_preNov_zoo), aes(x = Date, y = diff)) +
   geom_line() +
   xlab("")
 ```
 
 ```{r}
-adf.test(na.omit(cdc_preNov_ts$diff))
+adf.test(na.omit(cdc_preNov_zoo$diff))
 ```
 
 ```{r}
-acf(na.omit(cdc_preNov_ts$diff))
+acf(na.omit(cdc_preNov_zoo$diff))
 ```
 
 ```{r}
-pacf(na.omit(cdc_preNov_ts$diff))
+pacf(na.omit(cdc_preNov_zoo$diff))
 ```
 
 ```{r}
 # arima has a auto.arima function which gives us the ideal arima model based on our data.
-cdc_arima <- auto.arima(na.omit(cdc_preNov_ts$diff))
+cdc_arima <- auto.arima(na.omit(cdc_preNov_zoo$diff))
 cdc_arima
 
 
@@ -107,14 +106,14 @@ accuracy(cdc_arima)
 ```
 
 ```{r}
-modelcv = CVar(na.omit(cdc_preNov_ts$diff), k = 5, lambda = 0.15)
+modelcv = CVar(na.omit(cdc_preNov_zoo$diff), k = 5, lambda = 0.15)
 print(modelcv)
 ```
 
 #Work on this later
 
 ```{r}
-# autoplot(ts(cdc_preNov_ts$diff), series = "Data") +
+# autoplot(ts(cdc_preNov_zoo$diff), series = "Data") +
 #   autolayer(modelcv$testfit, series = "Fits") +
 #   autolayer(modelcv$residuals, series = "Residuals")
 # 
@@ -126,8 +125,7 @@ print(modelcv)
 #   forecast(h = 21) %>% 
 #   autoplot() 
 
-plot(cdc_arima %>% forecast(h = 21))
-lines(cdc_Nov2020_df, col = "red")
+ggplot()
 
 #nov = ggplot(cdc_Nov2020_df, aes(x = Date, y = Values)) + geom_line()
 ```
