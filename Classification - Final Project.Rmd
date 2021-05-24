@@ -1,13 +1,3 @@
----
-title: "Classification - Final Project"
-author: 'Falak Shah (SID: 914663151)'
-date: "5/23/2021"
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
 
 ```{r}
 library(tidyverse)
@@ -34,21 +24,22 @@ library(e1071)
 
 ```{r}
 
-cdc_classifiction = read.csv("C:/Users/Falak/Desktop/Spring Quarter '21/STA 160/CDC_classification.csv")
+#cdc_classification = read.csv("C:/Users/Falak/Desktop/Spring Quarter '21/STA 160/CDC_classification.csv")
 
-cdc_classifiction[,c(1,2,4,7:10,15:63)] <- lapply(cdc_classifiction[,c(1,2,4,7:10,15:63)], as.factor)
+cdc_classification = read.csv('cdc_filtered_encoded.csv')
 
 ## 75% of the sample size
-smp_size <- floor(0.75 * nrow(cdc_classifiction))
+smp_size <- floor(0.75 * nrow(cdc_classification))
 
 ## set the seed to make your partition reproducible
 set.seed(123)
-train_ind <- sample(seq_len(nrow(cdc_classifiction)), size = smp_size)
+train_ind <- sample(seq_len(nrow(cdc_classification)), size = smp_size)
 
-train_data <- cdc_classifiction[train_ind, ]
-test_data <- cdc_classifiction[-train_ind, ]
+train_data <- cdc_classification[train_ind, ]
+test_data <- cdc_classification[-train_ind, ]
 
-head(cdc_classifiction)
+head(cdc_classification)
+
 
 ```
 
@@ -62,12 +53,35 @@ control <- rfeControl(functions = lmFuncs , # random forest
                       verbose = FALSE) # number of folds
 
 
-x_train = train_data[,15:62]
-y_train = train_data[,7]
+names(train_data)
+#classes
+# [8] "hosp_yn"                   
+#  [9] "icu_yn"                    [10] "death_yn"
+# [15] "mechvent_yn"
+
+# Health worker not included
+# [11] "hc_work_yn"
+
+#predictor features of interest
+# [12] "pna_yn"                    
+# [13] "abxchest_yn"                "acuterespdistress_yn"      
+# [16] "fever_yn"                  
+# [17] "sfever_yn"                  "chills_yn"                 
+# [19] "myalgia_yn"                 "runnose_yn"                
+# [21] "sthroat_yn"                 "cough_yn"                  
+# [23] "sob_yn"                     "nauseavomit_yn"            
+# [25] "headache_yn"                "abdom_yn"                  
+# [27] "diarrhea_yn"                "medcond_yn"
+
+
+#x_train = train_data[,15:62]
+x_train = train_data[,c(12:14,16:28)]
+# hosp_yn index
+y_train = train_data[,8]
 
 result_rfe1 <- rfe(x = x_train, 
                    y = y_train, 
-                   sizes = c(1:ncol(x_train)),
+                   sizes = c(1:2),
                    rfeControl = control)
 
 
