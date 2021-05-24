@@ -1,5 +1,6 @@
 ```{r}
 library(tidyverse)
+library(fastDummies)
 
 #visualization
 library(ggplot2)
@@ -151,7 +152,36 @@ sample_cdc %>% group_by(current_status) %>% tally()
 
 ```
 
+```{r}
+cdc_nomissing = read.csv('CDC_no_missing09_12_2020.csv')
 
+glimpse(cdc_nomissing)
+
+cdc_nomissing = cdc_nomissing %>% filter_all(all_vars(. != "Unknown"))
+ 
+#no missing no unknowns 
+#cdc_nomissing %>% filter(cough_yn == "Unknown") %>% select(cough_yn)
+
+#write.csv(cdc_nomissing,file = "CDC_no_miss_unknown09_12_2020.csv",row.names = FALSE)
+
+```
+
+```{r}
+names(cdc_nomissing)
+test = NULL
+
+dummy = function(x){
+  ifelse(x == "Yes",1,0)
+}
+
+cdc_filtered_encoded = cdc_nomissing %>% 
+  mutate_at(vars(matches("_yn")), dummy) %>% 
+  mutate_at(vars(matches("_yn")), as.factor)
+
+glimpse(cdc_filtered_encoded)
+
+write.csv(cdc_filtered_encoded,"cdc_filtered_encoded.csv")
+```
 
 
 ```{r}
