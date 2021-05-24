@@ -24,21 +24,17 @@ library(e1071)
 
 ```{r}
 
-#cdc_classification = read.csv("C:/Users/Falak/Desktop/Spring Quarter '21/STA 160/CDC_classification.csv")
-
 cdc_classification = read.csv('cdc_filtered_encoded.csv')
-
+cdc_classification = cdc_classification[,2:32]
+cdc_classification[,c(1,2,4,7:31)] = lapply(cdc_classification[,c(1,2,4,7:31)],factor) 
 ## 75% of the sample size
 smp_size <- floor(0.75 * nrow(cdc_classification))
-
 ## set the seed to make your partition reproducible
 set.seed(123)
 train_ind <- sample(seq_len(nrow(cdc_classification)), size = smp_size)
-
 train_data <- cdc_classification[train_ind, ]
 test_data <- cdc_classification[-train_ind, ]
-
-head(cdc_classification)
+#head(cdc_classification)
 
 
 ```
