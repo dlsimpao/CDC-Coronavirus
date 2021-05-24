@@ -32,34 +32,23 @@ library(e1071)
 
 ```
 
-# Loading the data
-
 ```{r}
-cdc_2020 <- read.csv("C:/Users/Falak/Desktop/Spring Quarter '21/STA 160/CDC_encoded.csv")
-head(cdc_2020)
-# county locations data
 
-county_locations <- read.csv("C:/Users/Falak/Desktop/Spring Quarter '21/STA 160/CDC_county_locations.csv")
+cdc_classifiction = read.csv("C:/Users/Falak/Desktop/Spring Quarter '21/STA 160/CDC_classification.csv")
 
-cdc_2020[,c(1,2,4,7:10,15:66)] <- lapply(cdc_2020[,c(1,2,4,7:10,15:66)], as.factor)
-
-```
-
-# Splitting into training and test data 
-
-```{r}
+cdc_classifiction[,c(1,2,4,7:10,15:63)] <- lapply(cdc_classifiction[,c(1,2,4,7:10,15:63)], as.factor)
 
 ## 75% of the sample size
-smp_size <- floor(0.75 * nrow(cdc_2020))
+smp_size <- floor(0.75 * nrow(cdc_classifiction))
 
 ## set the seed to make your partition reproducible
 set.seed(123)
-train_ind <- sample(seq_len(nrow(cdc_2020)), size = smp_size)
+train_ind <- sample(seq_len(nrow(cdc_classifiction)), size = smp_size)
 
-train_data <- cdc_2020[train_ind, ]
-test_data <- cdc_2020[-train_ind, ]
+train_data <- cdc_classifiction[train_ind, ]
+test_data <- cdc_classifiction[-train_ind, ]
 
-
+head(cdc_classifiction)
 
 ```
 
@@ -72,25 +61,15 @@ control <- rfeControl(functions = lmFuncs , # random forest
                       repeats = 5, # number of repeats
                       verbose = FALSE) # number of folds
 
-head(cdc_2020)
 
-x_train = train_data[,15:66]
+x_train = train_data[,15:62]
 y_train = train_data[,7]
 
 result_rfe1 <- rfe(x = x_train, 
                    y = y_train, 
-                   sizes = c(1:nrow(x_train)),
+                   sizes = c(1:ncol(x_train)),
                    rfeControl = control)
 
 
 
 ```
-
-
-```{r}
-```
-
-
-```{r}
-```
-
