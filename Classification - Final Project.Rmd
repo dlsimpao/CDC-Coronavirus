@@ -1,3 +1,13 @@
+---
+title: "Classification - Final Project"
+author: 'Falak Shah (SID: 914663151)'
+date: "5/23/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
 
 ```{r}
 library(tidyverse)
@@ -22,64 +32,139 @@ library(e1071)
 
 ```
 
+# Loading the data
 ```{r}
-
 cdc_classification = read.csv('cdc_filtered_encoded.csv')
+cdc_classification = cdc_classification %>% filter(sex != "Missing")
 cdc_classification = cdc_classification[,2:32]
 cdc_classification[,c(1,2,4,7:31)] = lapply(cdc_classification[,c(1,2,4,7:31)],factor) 
-## 75% of the sample size
-smp_size <- floor(0.75 * nrow(cdc_classification))
-## set the seed to make your partition reproducible
-set.seed(123)
-train_ind <- sample(seq_len(nrow(cdc_classification)), size = smp_size)
-train_data <- cdc_classification[train_ind, ]
-test_data <- cdc_classification[-train_ind, ]
-#head(cdc_classification)
-
 
 ```
 
 
-# Hospitality - Logistic
+
+### Testing on subset
 
 ```{r}
-control <- rfeControl(functions = lmFuncs , # random forest
-                      method = "repeatedcv", # repeated cv
-                      repeats = 5, # number of repeats
-                      verbose = FALSE) # number of folds
+set.seed(100)
+subset_classification <- cdc_classification %>% sample_frac(0.05)
 
+# Step 1: Get row numbers for the training data
+trainRowNumbers <- createDataPartition(subset_classification$hosp_yn, p=0.75, list=FALSE)
 
-names(train_data)
-#classes
-# [8] "hosp_yn"                   
-#  [9] "icu_yn"                    [10] "death_yn"
-# [15] "mechvent_yn"
+# Step 2: Create the training  dataset
+trainData <- subset_classification[trainRowNumbers,]
 
-# Health worker not included
-# [11] "hc_work_yn"
-
-#predictor features of interest
-# [12] "pna_yn"                    
-# [13] "abxchest_yn"                "acuterespdistress_yn"      
-# [16] "fever_yn"                  
-# [17] "sfever_yn"                  "chills_yn"                 
-# [19] "myalgia_yn"                 "runnose_yn"                
-# [21] "sthroat_yn"                 "cough_yn"                  
-# [23] "sob_yn"                     "nauseavomit_yn"            
-# [25] "headache_yn"                "abdom_yn"                  
-# [27] "diarrhea_yn"                "medcond_yn"
-
-
-#x_train = train_data[,15:62]
-x_train = train_data[,c(12:14,16:28)]
-# hosp_yn index
-y_train = train_data[,8]
-
-result_rfe1 <- rfe(x = x_train, 
-                   y = y_train, 
-                   sizes = c(1:2),
-                   rfeControl = control)
+# Step 3: Create the test dataset
+testData <- subset_classification[-trainRowNumbers,]
 
 
 
 ```
+
+
+
+
+
+
+```{r}
+
+train_hosp <- trainData %>% select(c("current_status", "sex", "hosp_yn", "hc_work_yn", "pna_yn", "abxchest_yn"    ,"acuterespdistress_yn", "fever_yn", "sfever_yn", "chills_yn", "myalgia_yn", "runnose_yn", "sthroat_yn",               
+"cough_yn", "sob_yn", "nauseavomit_yn", "headache_yn", "abdom_yn", "diarrhea_yn", "medcond_yn","age_group"))
+
+test_hosp <- testData %>% select(c("current_status", "sex", "hosp_yn", "hc_work_yn", "pna_yn", "abxchest_yn"    ,"acuterespdistress_yn", "fever_yn", "sfever_yn", "chills_yn", "myalgia_yn", "runnose_yn", "sthroat_yn",               
+"cough_yn", "sob_yn", "nauseavomit_yn", "headache_yn", "abdom_yn", "diarrhea_yn", "medcond_yn","age_group"))
+
+#head(train_hosp)
+
+
+
+# One-Hot Encoding
+# Creating dummy variables is converting a categorical variable to as many binary variables as here are categories.
+dummies_model_hosp <- dummyVars(hosp_yn ~ . , data=train_hosp)
+
+# Create the dummy variables using predict. The Y variable (Purchase) will not be present in trainData_mat.
+trainData_hosp <- predict(dummies_model_hosp, newdata = train_hosp)
+
+# # Convert to dataframe
+trainData_hosp <- data.frame(trainData_hosp)
+
+trainData_hosp$Hosp <- train_hosp$hosp_yn
+
+# # See the structure of the new dataset
+str(trainData_hosp)
+
+
+# One-Hot Encoding
+# Creating dummy variables is converting a categorical variable to as many binary variables as here are categories.
+dummies_model_hosp_test <- dummyVars(hosp_yn ~ . , data=test_hosp)
+
+# Create the dummy variables using predict. The Y variable (Purchase) will not be present in trainData_mat.
+testData_hosp <- predict(dummies_model_hosp_test, newdata = test_hosp)
+
+# # Convert to dataframe
+testData_hosp <- data.frame(testData_hosp)
+
+testData_hosp$Hosp <- test_hosp$hosp_yn
+
+# # See the structure of the new dataset
+str(testData_hosp)
+
+
+```
+
+
+
+
+```{r}
+library(glmnet)
+# Set the seed for reproducibility
+set.seed(100)
+
+
+my_glmnet <- getModelInfo("glmnet") %>% magrittr::extract2("glmnet")
+my_glmnet$grid <- function (x, y, len = NULL, search = "grid") {
+  if (search == "grid") {
+    numLev <- if (is.character(y) | is.factor(y)) 
+      length(levels(y))
+    else NA
+    if (!is.na(numLev)) {
+      fam <- ifelse(numLev > 2, "multinomial", "binomial")
+    }
+    else fam <- "gaussian"
+    init <- glmnet(as.matrix(x), y, family = fam, nlambda = 52, alpha = 0.5)
+    lambda <- unique(init$lambda)
+    lambda <- lambda[-c(1, length(lambda))]
+    l_seq <- seq(1, length(lambda), length = len) %>% round %>% unique
+    lambda <- lambda[l_seq]
+    out <- expand.grid(alpha = seq(0.1, 1, length = len), 
+                       lambda = lambda)
+  }
+  else {
+    out <- data.frame(alpha = runif(len, min = 0, 1), lambda = 2^runif(len, 
+                                                                       min = -10, 3))
+  }
+  out
+}
+
+
+# Train the model using randomForest and predict on the training data itself.
+model_logistic = train(Hosp ~ ., data=trainData_hosp, method= my_glmnet)
+
+plot(model_logistic, main="Model Accuracies with LR")
+
+varimp_lr <- varImp(model_logistic)
+
+varimp_lr
+
+#plot(varimp_lr, main="Variable Importance with LR")
+
+predicted = predict(model_logistic,testData_hosp[,c(1:47)])
+
+perf_lr = confusionMatrix(reference = testData_hosp$Hosp, data = predicted, mode='everything')
+
+perf_lr
+
+
+```
+
