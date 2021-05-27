@@ -1,3 +1,4 @@
+
 ```{r}
 library(tidyverse)
 library(timeDate)
@@ -190,6 +191,16 @@ fitControl <- trainControl(
 ) 
 ```
 
+```{r}
+fitControl2 <- trainControl(
+    method = 'cv',                   # k-fold cross validation
+    number = 3,                      # number of folds
+    savePredictions = 'final',       # saves predictions for optimal tuning parameter
+    classProbs = T,                  # should class probabilities be returned
+    summaryFunction=twoClassSummary  # results summary function
+) 
+```
+
 
 #### SVM 
 
@@ -299,7 +310,7 @@ perf_rf
 ```{r}
 # Training the model on training data
 levels(trainData_hosp$Hosp) <- c("No", "Yes")
-model_xgbdart = train(Hosp ~ ., data=trainData_hosp, method='xgbDART', tuneLength= 5, trControl = fitControl)
+model_xgbdart = train(Hosp ~ ., data=trainData_hosp, method='xgbDART', tuneLength= 3, trControl = fitControl2)
 #model_xgbdart
 
 # Testing it on test data
@@ -316,8 +327,53 @@ predicted = predict(model_xgbdart,testData_hosp[,c(1:47)])
 
 perf_xgbdart = confusionMatrix(reference = testData_hosp$Hosp, data = predicted, mode='everything')
 
+#cv = 3, sample = 0.05,  
 perf_xgbdart
 
-
-
+# abxchest_yn.0	100.000000		
+# pna_yn.0	97.153723		
+# medcond_yn.0	23.999002		
+# sob_yn.0	20.768095		
+# acuterespdistress_yn.0	18.395689		
+# age_group.80..Years	16.861363		
+# fever_yn.0	15.769595		
+# age_group.70...79.Years	12.923882		
+# headache_yn.1	6.320604		
+# age_group.50...59.Years	6.245333	
+# age_group.20...29.Years	6.105308		
+# runnose_yn.0	5.901823		
+# headache_yn.0	5.044246		
+# hc_work_yn.0	4.848716		
+# pna_yn.1	4.475765		
+# medcond_yn.1	4.301723		
+# age_group.30...39.Years	3.569835		
+# age_group.60...69.Years	3.011651		
+# age_group.10...19.Years	2.791275		
+# current_status.Laboratory.confirmed.case	2.758514
 ```
+    No  2482  116
+       Yes   31  103
+                                          
+               Accuracy : 0.9462          
+                 95% CI : (0.9371, 0.9544)
+    No Information Rate : 0.9198          
+    P-Value [Acc > NIR] : 5.181e-08       
+                                          
+                  Kappa : 0.5566          
+                                          
+ Mcnemar's Test P-Value : 4.262e-12       
+                                          
+            Sensitivity : 0.9877          
+            Specificity : 0.4703          
+         Pos Pred Value : 0.9554          
+         Neg Pred Value : 0.7687          
+              Precision : 0.9554          
+                 Recall : 0.9877          
+                     F1 : 0.9712          
+             Prevalence : 0.9198          
+         Detection Rate : 0.9085          
+   Detection Prevalence : 0.9510          
+      Balanced Accuracy : 0.7290          
+                                          
+       'Positive' Class : No              
+                             
