@@ -1,14 +1,3 @@
----
-title: "Classification - Final Project"
-author: 'Falak Shah (SID: 914663151)'
-date: "5/23/2021"
-output: html_document
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ```{r}
 library(tidyverse)
 library(timeDate)
@@ -168,6 +157,29 @@ perf_lr
 
 ```
 
+Accuracy : 0.9462          
+                 95% CI : (0.9371, 0.9544)
+    No Information Rate : 0.9198          
+    P-Value [Acc > NIR] : 5.181e-08       
+                                          
+                  Kappa : 0.5543          
+                                          
+ Mcnemar's Test P-Value : 1.311e-12       
+                                          
+            Sensitivity : 0.9881          
+            Specificity : 0.4658          
+         Pos Pred Value : 0.9550          
+         Neg Pred Value : 0.7727          
+              Precision : 0.9550          
+                 Recall : 0.9881          
+                     F1 : 0.9712          
+             Prevalence : 0.9198          
+         Detection Rate : 0.9089          
+   Detection Prevalence : 0.9517          
+      Balanced Accuracy : 0.7269          
+                                          
+       'Positive' Class : 0  
+
 ```{r}
 fitControl <- trainControl(
     method = 'cv',                   # k-fold cross validation
@@ -207,7 +219,28 @@ perf_svm
 
 
 ```
-
+Accuracy : 0.9458         
+                 95% CI : (0.9367, 0.954)
+    No Information Rate : 0.9198         
+    P-Value [Acc > NIR] : 7.987e-08      
+                                         
+                  Kappa : 0.5524         
+                                         
+ Mcnemar's Test P-Value : 2.809e-12      
+                                         
+            Sensitivity : 0.9877         
+            Specificity : 0.4658         
+         Pos Pred Value : 0.9550         
+         Neg Pred Value : 0.7669         
+              Precision : 0.9550         
+                 Recall : 0.9877         
+                     F1 : 0.9710         
+             Prevalence : 0.9198         
+         Detection Rate : 0.9085         
+   Detection Prevalence : 0.9513         
+      Balanced Accuracy : 0.7267         
+                                         
+       'Positive' Class : No 
 
 #### Random Forest
 
@@ -235,7 +268,31 @@ perf_rf = confusionMatrix(reference = testData_hosp$Hosp, data = predicted, mode
 perf_rf
 
 ```
-
+        No  2486  124
+       Yes   27   95
+                                         
+               Accuracy : 0.9447         
+                 95% CI : (0.9355, 0.953)
+    No Information Rate : 0.9198         
+    P-Value [Acc > NIR] : 2.808e-07      
+                                         
+                  Kappa : 0.5302         
+                                         
+ Mcnemar's Test P-Value : 5.612e-15      
+                                         
+            Sensitivity : 0.9893         
+            Specificity : 0.4338         
+         Pos Pred Value : 0.9525         
+         Neg Pred Value : 0.7787         
+              Precision : 0.9525         
+                 Recall : 0.9893         
+                     F1 : 0.9705         
+             Prevalence : 0.9198         
+         Detection Rate : 0.9100         
+   Detection Prevalence : 0.9553         
+      Balanced Accuracy : 0.7115         
+                                         
+       'Positive' Class : No     
 
 ### XG Boost Dart 
 
