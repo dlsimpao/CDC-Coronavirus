@@ -168,3 +168,89 @@ perf_lr
 
 ```
 
+
+#### SVM 
+
+```{r}
+
+# Training the model on training data
+levels(trainData_hosp$Hosp) <- c("No", "Yes")
+model_svmRadial = train(Hosp ~ ., data=trainData_hosp, method='svmRadial', tuneLength=15, trControl = fitControl)
+#model_svmRadial
+
+# Testing it on test data
+
+varimp_svm <- varImp(model_svmRadial)
+
+varimp_svm
+
+#plot(varimp_svm, main="Variable Importance with SVM")
+
+levels(testData_hosp$Hosp) <- c("No", "Yes")
+
+predicted = predict(model_svmRadial,testData_hosp[,c(1:47)])
+
+perf_svm = confusionMatrix(reference = testData_hosp$Hosp, data = predicted, mode='everything')
+
+perf_svm
+
+
+
+```
+
+
+#### Random Forest
+
+
+```{r}
+# Training the model on training data
+levels(trainData_hosp$Hosp) <- c("No", "Yes")
+model_rf = train(Hosp ~ ., data=trainData_hosp, method='rf', tuneLength= 10, trControl = fitControl)
+#model_rf
+
+# Testing it on test data
+
+varimp_rf <- varImp(model_rf)
+
+varimp_rf
+
+#plot(varimp_rf, main="Variable Importance with Random Forest")
+
+levels(testData_hosp$Hosp) <- c("No", "Yes")
+
+predicted = predict(model_rf,testData_hosp[,c(1:47)])
+
+perf_rf = confusionMatrix(reference = testData_hosp$Hosp, data = predicted, mode='everything')
+
+perf_rf
+
+```
+
+
+### XG Boost Dart 
+
+```{r}
+# Training the model on training data
+levels(trainData_hosp$Hosp) <- c("No", "Yes")
+model_xgbdart = train(Hosp ~ ., data=trainData_hosp, method='xgbDART', tuneLength= 5, trControl = fitControl)
+#model_xgbdart
+
+# Testing it on test data
+
+varimp_xgbdart <- varImp(model_xgbdart)
+
+varimp_xgbdart
+
+#plot(varimp_xgbdart, main="Variable Importance with XG Boost")
+
+levels(testData_hosp$Hosp) <- c("No", "Yes")
+
+predicted = predict(model_xgbdart,testData_hosp[,c(1:47)])
+
+perf_xgbdart = confusionMatrix(reference = testData_hosp$Hosp, data = predicted, mode='everything')
+
+perf_xgbdart
+
+
+
+```
