@@ -1215,5 +1215,211 @@ perf_xgbdart
 
 ```
 
+### Mortality (With symptoms, hospitalization, ICU and ventilator)
 
+```{r}
+
+train_mort2 <- trainData %>% select(c("current_status", "sex","hosp_yn","icu_yn","mechvent_yn" ,"death_yn", "hc_work_yn", "pna_yn", "abxchest_yn"    ,"acuterespdistress_yn", "fever_yn", "sfever_yn", "chills_yn", "myalgia_yn", "runnose_yn", "sthroat_yn","cough_yn", "sob_yn", "nauseavomit_yn", "headache_yn", "abdom_yn", "diarrhea_yn", "medcond_yn","age_group"))
+
+test_mort2 <- testData %>% select(c("current_status", "sex", "hosp_yn","icu_yn","mechvent_yn" , "death_yn", "hc_work_yn", "pna_yn", "abxchest_yn"    ,"acuterespdistress_yn", "fever_yn", "sfever_yn", "chills_yn", "myalgia_yn", "runnose_yn", "sthroat_yn", "cough_yn", "sob_yn", "nauseavomit_yn", "headache_yn", "abdom_yn", "diarrhea_yn", "medcond_yn","age_group"))
+
+#head(train_mort2)
+
+
+# One-Hot Encoding
+# Creating dummy variables is converting a categorical variable to as many binary variables as here are categories.
+dummies_model_mort2 <- dummyVars(death_yn ~ . , data=train_mort2)
+
+# Create the dummy variables using predict. The Y variable (Purchase) will not be present in trainData_mat.
+trainData_mort2 <- predict(dummies_model_mort2, newdata = train_mort2)
+
+# # Convert to dataframe
+trainData_mort2 <- data.frame(trainData_mort2)
+
+trainData_mort2$Mortality <- train_mort2$death_yn
+
+# # See the structure of the new dataset
+str(trainData_mort2)
+
+
+# One-Hot Encoding
+# Creating dummy variables is converting a categorical variable to as many binary variables as here are categories.
+dummies_model_mort2_test <- dummyVars(death_yn ~ . , data=test_mort2)
+
+# Create the dummy variables using predict. The Y variable (Purchase) will not be present in trainData_mat.
+testData_mort2 <- predict(dummies_model_mort2_test, newdata = test_mort2)
+
+# # Convert to dataframe
+testData_mort2 <- data.frame(testData_mort2)
+
+testData_mort2$Mortality <- test_mort2$death_yn
+
+# # See the structure of the new dataset
+str(testData_mort2)
+
+
+```
+
+
+
+# Logistic Reg
+
+```{r}
+library(glmnet)
+# Set the seed for reproducibility
+set.seed(100)
+
+
+my_glmnet <- getModelInfo("glmnet") %>% magrittr::extract2("glmnet")
+my_glmnet$grid <- function (x, y, len = NULL, search = "grid") {
+  if (search == "grid") {
+    numLev <- if (is.character(y) | is.factor(y)) 
+      length(levels(y))
+    else NA
+    if (!is.na(numLev)) {
+      fam <- ifelse(numLev > 2, "multinomial", "binomial")
+    }
+    else fam <- "gaussian"
+    init <- glmnet(as.matrix(x), y, family = fam, nlambda = 52, alpha = 0.5)
+    lambda <- unique(init$lambda)
+    lambda <- lambda[-c(1, length(lambda))]
+    l_seq <- seq(1, length(lambda), length = len) %>% round %>% unique
+    lambda <- lambda[l_seq]
+    out <- expand.grid(alpha = seq(0.1, 1, length = len), 
+                       lambda = lambda)
+  }
+  else {
+    out <- data.frame(alpha = runif(len, min = 0, 1), lambda = 2^runif(len, 
+                                                                       min = -10, 3))
+  }
+  out
+}
+
+
+#levels(trainData_hosp$Hosp) <- c("Yes", "No")
+
+# Train the model using randomForest and predict on the training data itself.
+model_logistic = train(Mortality ~ ., data=trainData_mort2, method= my_glmnet)
+
+plot(model_logistic, main="Model Accuracies with LR")
+
+varimp_lr <- varImp(model_logistic)
+
+varimp_lr
+
+#plot(varimp_lr, main="Variable Importance with LR")
+
+#levels(testData_hosp$Hosp) <- c("Yes", "No")
+
+predicted = predict(model_logistic,testData_mort2[,c(1:50)])
+
+perf_lr = confusionMatrix(reference = testData_mort2$Mortality, data = predicted, mode='everything')
+
+perf_lr
+
+
+#roc_hosp_lr = roc(as.integer(testData_hosp$Hosp),as.integer(predicted))
+#plot(roc_hosp_lr)
+
+#auc_hosp_lr = auc(roc_hosp_lr)
+#auc_hosp_lr
+
+```
+
+# FIT CONTROL
+
+```{r}
+fitControl <- trainControl(
+    method = 'cv',                   # k-fold cross validation
+    number = 5,                      # number of folds
+    savePredictions = 'final',       # saves predictions for optimal tuning parameter
+    classProbs = T,                  # should class probabilities be returned
+    summaryFunction=twoClassSummary  # results summary function
+) 
+```
+
+#### SVM 
+
+```{r}
+
+# Training the model on training data
+levels(trainData_mort2$Mortality) <- c("No", "Yes")
+model_svmRadial = train(Mortality ~ ., data=trainData_mort2, method='svmRadial', tuneLength=15, trControl = fitControl)
+#model_svmRadial
+
+# Testing it on test data
+
+varimp_svm <- varImp(model_svmRadial)
+
+varimp_svm
+
+#plot(varimp_svm, main="Variable Importance with SVM")
+
+levels(testData_mort2$Mortality) <- c("No", "Yes")
+
+predicted = predict(model_svmRadial,testData_mort2[,c(1:50)])
+
+perf_svm = confusionMatrix(reference = testData_mort2$Mortality, data = predicted, mode='everything')
+
+perf_svm
+
+
+
+```
+
+
+#### Random Forest
+
+
+```{r}
+# Training the model on training data
+levels(trainData_mort2$Mortality) <- c("No", "Yes")
+model_rf = train(Mortality ~ ., data=trainData_mort2, method='rf', tuneLength= 10, trControl = fitControl)
+#model_rf
+
+# Testing it on test data
+
+varimp_rf <- varImp(model_rf)
+
+varimp_rf
+
+#plot(varimp_rf, main="Variable Importance with Random Forest")
+
+levels(testData_mort2$Mortality) <- c("No", "Yes")
+
+predicted = predict(model_rf,testData_mort2[,c(1:50)])
+
+perf_rf = confusionMatrix(reference = testData_mort2$Mortality, data = predicted, mode='everything')
+
+perf_rf
+
+```
+
+
+### XG Boost Dart 
+
+```{r}
+# Training the model on training data
+levels(trainData_mort2$Mortality) <- c("No", "Yes")
+model_xgbdart = train(Mortality ~ ., data=trainData_mort2, method='xgbDART', tuneLength= 5, trControl = fitControl)
+#model_xgbdart
+
+# Testing it on test data
+
+varimp_xgbdart <- varImp(model_xgbdart)
+
+varimp_xgbdart
+
+#plot(varimp_xgbdart, main="Variable Importance with XG Boost")
+
+levels(testData_mort2$Mortality) <- c("No", "Yes")
+
+predicted = predict(model_xgbdart,testData_mort2[,c(1:50)])
+
+perf_xgbdart = confusionMatrix(reference = testData_mort2$Mortality, data = predicted, mode='everything')
+
+perf_xgbdart
+
+
+```
 
