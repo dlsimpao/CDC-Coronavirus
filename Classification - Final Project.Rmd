@@ -587,3 +587,216 @@ perf_xgbdart = confusionMatrix(reference = testData_icu$ICU, data = predicted, m
 perf_xgbdart
 
 ```
+
+#### Ventilator (with symptoms only)
+
+```{r}
+
+train_vent <- trainData %>% select(c("current_status", "sex", "mechvent_yn", "hc_work_yn", "pna_yn", "abxchest_yn"    ,"acuterespdistress_yn", "fever_yn", "sfever_yn", "chills_yn", "myalgia_yn", "runnose_yn", "sthroat_yn",               
+"cough_yn", "sob_yn", "nauseavomit_yn", "headache_yn", "abdom_yn", "diarrhea_yn", "medcond_yn","age_group"))
+
+test_vent <- testData %>% select(c("current_status", "sex", "mechvent_yn", "hc_work_yn", "pna_yn", "abxchest_yn"    ,"acuterespdistress_yn", "fever_yn", "sfever_yn", "chills_yn", "myalgia_yn", "runnose_yn", "sthroat_yn",               
+"cough_yn", "sob_yn", "nauseavomit_yn", "headache_yn", "abdom_yn", "diarrhea_yn", "medcond_yn","age_group"))
+
+#head(train_vent)
+
+
+# One-Hot Encoding
+# Creating dummy variables is converting a categorical variable to as many binary variables as here are categories.
+dummies_model_vent <- dummyVars(mechvent_yn ~ . , data=train_vent)
+
+# Create the dummy variables using predict. The Y variable (Purchase) will not be present in trainData_mat.
+trainData_vent <- predict(dummies_model_vent, newdata = train_vent)
+
+# # Convert to dataframe
+trainData_vent <- data.frame(trainData_vent)
+
+trainData_vent$Ventilator <- train_vent$mechvent_yn
+
+# # See the structure of the new dataset
+str(trainData_vent)
+
+
+# One-Hot Encoding
+# Creating dummy variables is converting a categorical variable to as many binary variables as here are categories.
+dummies_model_vent_test <- dummyVars(mechvent_yn ~ . , data=test_vent)
+
+# Create the dummy variables using predict. The Y variable (Purchase) will not be present in trainData_mat.
+testData_vent <- predict(dummies_model_vent_test, newdata = test_vent)
+
+# # Convert to dataframe
+testData_vent <- data.frame(testData_vent)
+
+testData_vent$Ventilator <- test_vent$mechvent_yn
+
+# # See the structure of the new dataset
+str(testData_vent)
+
+
+```
+
+
+
+
+```{r}
+library(glmnet)
+# Set the seed for reproducibility
+set.seed(100)
+
+
+my_glmnet <- getModelInfo("glmnet") %>% magrittr::extract2("glmnet")
+my_glmnet$grid <- function (x, y, len = NULL, search = "grid") {
+  if (search == "grid") {
+    numLev <- if (is.character(y) | is.factor(y)) 
+      length(levels(y))
+    else NA
+    if (!is.na(numLev)) {
+      fam <- ifelse(numLev > 2, "multinomial", "binomial")
+    }
+    else fam <- "gaussian"
+    init <- glmnet(as.matrix(x), y, family = fam, nlambda = 52, alpha = 0.5)
+    lambda <- unique(init$lambda)
+    lambda <- lambda[-c(1, length(lambda))]
+    l_seq <- seq(1, length(lambda), length = len) %>% round %>% unique
+    lambda <- lambda[l_seq]
+    out <- expand.grid(alpha = seq(0.1, 1, length = len), 
+                       lambda = lambda)
+  }
+  else {
+    out <- data.frame(alpha = runif(len, min = 0, 1), lambda = 2^runif(len, 
+                                                                       min = -10, 3))
+  }
+  out
+}
+
+
+#levels(trainData_hosp$Hosp) <- c("Yes", "No")
+
+# Train the model using randomForest and predict on the training data itself.
+model_logistic = train(Ventilator ~ ., data=trainData_vent, method= my_glmnet)
+
+plot(model_logistic, main="Model Accuracies with LR")
+
+varimp_lr <- varImp(model_logistic)
+
+varimp_lr
+
+#plot(varimp_lr, main="Variable Importance with LR")
+
+#levels(testData_hosp$Hosp) <- c("Yes", "No")
+
+predicted = predict(model_logistic,testData_vent[,c(1:47)])
+
+perf_lr = confusionMatrix(reference = testData_vent$Ventilator, data = predicted, mode='everything')
+
+perf_lr
+
+
+#roc_hosp_lr = roc(as.integer(testData_hosp$Hosp),as.integer(predicted))
+#plot(roc_hosp_lr)
+
+#auc_hosp_lr = auc(roc_hosp_lr)
+#auc_hosp_lr
+
+```
+
+# FIT CONTROL
+
+```{r}
+fitControl <- trainControl(
+    method = 'cv',                   # k-fold cross validation
+    number = 5,                      # number of folds
+    savePredictions = 'final',       # saves predictions for optimal tuning parameter
+    classProbs = T,                  # should class probabilities be returned
+    summaryFunction=twoClassSummary  # results summary function
+) 
+```
+
+#### SVM 
+
+```{r}
+
+# Training the model on training data
+levels(trainData_vent$Ventilator) <- c("No", "Yes")
+model_svmRadial = train(Ventilator ~ ., data=trainData_vent, method='svmRadial', tuneLength=15, trControl = fitControl)
+#model_svmRadial
+
+# Testing it on test data
+
+varimp_svm <- varImp(model_svmRadial)
+
+varimp_svm
+
+#plot(varimp_svm, main="Variable Importance with SVM")
+
+levels(testData_vent$Ventilator) <- c("No", "Yes")
+
+predicted = predict(model_svmRadial,testData_vent[,c(1:47)])
+
+perf_svm = confusionMatrix(reference = testData_vent$Ventilator, data = predicted, mode='everything')
+
+perf_svm
+
+
+
+```
+
+
+#### Random Forest
+
+
+```{r}
+# Training the model on training data
+levels(trainData_vent$Ventilator) <- c("No", "Yes")
+model_rf = train(Ventilator ~ ., data=trainData_vent, method='rf', tuneLength= 10, trControl = fitControl)
+#model_rf
+
+# Testing it on test data
+
+varimp_rf <- varImp(model_rf)
+
+varimp_rf
+
+#plot(varimp_rf, main="Variable Importance with Random Forest")
+
+levels(testData_vent$Ventilator) <- c("No", "Yes")
+
+predicted = predict(model_rf,testData_vent[,c(1:47)])
+
+perf_rf = confusionMatrix(reference = testData_vent$Ventilator, data = predicted, mode='everything')
+
+perf_rf
+
+```
+
+
+### XG Boost Dart 
+
+```{r}
+# Training the model on training data
+levels(trainData_vent$Ventilator) <- c("No", "Yes")
+model_xgbdart = train(Ventilator ~ ., data=trainData_vent, method='xgbDART', tuneLength= 5, trControl = fitControl)
+#model_xgbdart
+
+# Testing it on test data
+
+varimp_xgbdart <- varImp(model_xgbdart)
+
+varimp_xgbdart
+
+#plot(varimp_xgbdart, main="Variable Importance with XG Boost")
+
+levels(testData_vent$Ventilator) <- c("No", "Yes")
+
+predicted = predict(model_xgbdart,testData_vent[,c(1:47)])
+
+perf_xgbdart = confusionMatrix(reference = testData_vent$Ventilator, data = predicted, mode='everything')
+
+perf_xgbdart
+
+
+```
+
+
+
+
