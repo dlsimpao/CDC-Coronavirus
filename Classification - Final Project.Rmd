@@ -1,5 +1,5 @@
 
-```{r}
+```{r, message = FALSE}
 library(tidyverse)
 library(timeDate)
 library(ggplot2)
@@ -37,7 +37,7 @@ cdc_classification[,c(1,2,4,7:31)] = lapply(cdc_classification[,c(1,2,4,7:31)],f
 
 ```{r}
 set.seed(100)
-subset_classification <- cdc_classification %>% sample_frac(0.05)
+subset_classification <- cdc_classification %>% sample_frac(0.20)
 
 # Step 1: Get row numbers for the training data
 trainRowNumbers <- createDataPartition(subset_classification$hosp_yn, p=0.75, list=FALSE)
@@ -309,26 +309,26 @@ perf_rf
 
 ```{r}
 # Training the model on training data
-levels(trainData_hosp$Hosp) <- c("No", "Yes")
-model_xgbdart = train(Hosp ~ ., data=trainData_hosp, method='xgbDART', tuneLength= 3, trControl = fitControl2)
-#model_xgbdart
-
-# Testing it on test data
-
-varimp_xgbdart <- varImp(model_xgbdart)
-
-varimp_xgbdart
-
-#plot(varimp_xgbdart, main="Variable Importance with XG Boost")
-
-levels(testData_hosp$Hosp) <- c("No", "Yes")
-
-predicted = predict(model_xgbdart,testData_hosp[,c(1:47)])
-
-perf_xgbdart = confusionMatrix(reference = testData_hosp$Hosp, data = predicted, mode='everything')
-
-#cv = 3, sample = 0.05,  
-perf_xgbdart
+# levels(trainData_hosp$Hosp) <- c("No", "Yes")
+# model_xgbdart = train(Hosp ~ ., data=trainData_hosp, method='xgbDART', tuneLength= 3, trControl = fitControl2)
+# #model_xgbdart
+# 
+# # Testing it on test data
+# 
+# varimp_xgbdart <- varImp(model_xgbdart)
+# 
+# varimp_xgbdart
+# 
+# #plot(varimp_xgbdart, main="Variable Importance with XG Boost")
+# 
+# levels(testData_hosp$Hosp) <- c("No", "Yes")
+# 
+# predicted = predict(model_xgbdart,testData_hosp[,c(1:47)])
+# 
+# perf_xgbdart = confusionMatrix(reference = testData_hosp$Hosp, data = predicted, mode='everything')
+# 
+# #cv = 3, sample = 0.05,  
+# perf_xgbdart
 
 # abxchest_yn.0	100.000000		
 # pna_yn.0	97.153723		
@@ -566,25 +566,25 @@ perf_rf
 
 ```{r}
 # Training the model on training data
-levels(trainData_icu$ICU) <- c("No", "Yes")
-model_xgbdart = train(ICU ~ ., data=trainData_icu, method='xgbDART', tuneLength= 5, trControl = fitControl)
-#model_xgbdart
-
-# Testing it on test data
-
-varimp_xgbdart <- varImp(model_xgbdart)
-
-varimp_xgbdart
-
-#plot(varimp_xgbdart, main="Variable Importance with XG Boost")
-
-levels(testData_icu$ICU) <- c("No", "Yes")
-
-predicted = predict(model_xgbdart,testData_icu[,c(1:47)])
-
-perf_xgbdart = confusionMatrix(reference = testData_icu$ICU, data = predicted, mode='everything')
-
-perf_xgbdart
+# levels(trainData_icu$ICU) <- c("No", "Yes")
+# model_xgbdart = train(ICU ~ ., data=trainData_icu, method='xgbDART', tuneLength= 5, trControl = fitControl)
+# #model_xgbdart
+# 
+# # Testing it on test data
+# 
+# varimp_xgbdart <- varImp(model_xgbdart)
+# 
+# varimp_xgbdart
+# 
+# #plot(varimp_xgbdart, main="Variable Importance with XG Boost")
+# 
+# levels(testData_icu$ICU) <- c("No", "Yes")
+# 
+# predicted = predict(model_xgbdart,testData_icu[,c(1:47)])
+# 
+# perf_xgbdart = confusionMatrix(reference = testData_icu$ICU, data = predicted, mode='everything')
+# 
+# perf_xgbdart
 
 ```
 
@@ -774,26 +774,26 @@ perf_rf
 
 ```{r}
 # Training the model on training data
-levels(trainData_vent$Ventilator) <- c("No", "Yes")
-model_xgbdart = train(Ventilator ~ ., data=trainData_vent, method='xgbDART', tuneLength= 5, trControl = fitControl)
-#model_xgbdart
-
-# Testing it on test data
-
-varimp_xgbdart <- varImp(model_xgbdart)
-
-
-varimp_xgbdart
-
-#plot(varimp_xgbdart, main="Variable Importance with XG Boost")
-
-levels(testData_vent$Ventilator) <- c("No", "Yes")
-
-predicted = predict(model_xgbdart,testData_vent[,c(1:47)])
-
-perf_xgbdart = confusionMatrix(reference = testData_vent$Ventilator, data = predicted, mode='everything')
-
-perf_xgbdart
+# levels(trainData_vent$Ventilator) <- c("No", "Yes")
+# model_xgbdart = train(Ventilator ~ ., data=trainData_vent, method='xgbDART', tuneLength= 5, trControl = fitControl)
+# #model_xgbdart
+# 
+# # Testing it on test data
+# 
+# varimp_xgbdart <- varImp(model_xgbdart)
+# 
+# 
+# varimp_xgbdart
+# 
+# #plot(varimp_xgbdart, main="Variable Importance with XG Boost")
+# 
+# levels(testData_vent$Ventilator) <- c("No", "Yes")
+# 
+# predicted = predict(model_xgbdart,testData_vent[,c(1:47)])
+# 
+# perf_xgbdart = confusionMatrix(reference = testData_vent$Ventilator, data = predicted, mode='everything')
+# 
+# perf_xgbdart
 
 
 ```
@@ -982,25 +982,25 @@ perf_rf
 
 ```{r}
 # Training the model on training data
-levels(trainData_vent2$Ventilator) <- c("No", "Yes")
-model_xgbdart = train(Ventilator ~ ., data=trainData_vent2, method='xgbDART', tuneLength= 5, trControl = fitControl)
-#model_xgbdart
-
-# Testing it on test data
-
-varimp_xgbdart <- varImp(model_xgbdart)
-
-varimp_xgbdart
-
-#plot(varimp_xgbdart, main="Variable Importance with XG Boost")
-
-levels(testData_vent2$Ventilator) <- c("No", "Yes")
-
-predicted = predict(model_xgbdart,testData_vent2[,c(1:48)])
-
-perf_xgbdart = confusionMatrix(reference = testData_vent2$Ventilator, data = predicted, mode='everything')
-
-perf_xgbdart
+# levels(trainData_vent2$Ventilator) <- c("No", "Yes")
+# model_xgbdart = train(Ventilator ~ ., data=trainData_vent2, method='xgbDART', tuneLength= 5, trControl = fitControl)
+# #model_xgbdart
+# 
+# # Testing it on test data
+# 
+# varimp_xgbdart <- varImp(model_xgbdart)
+# 
+# varimp_xgbdart
+# 
+# #plot(varimp_xgbdart, main="Variable Importance with XG Boost")
+# 
+# levels(testData_vent2$Ventilator) <- c("No", "Yes")
+# 
+# predicted = predict(model_xgbdart,testData_vent2[,c(1:48)])
+# 
+# perf_xgbdart = confusionMatrix(reference = testData_vent2$Ventilator, data = predicted, mode='everything')
+# 
+# perf_xgbdart
 
 
 ```
@@ -1192,25 +1192,25 @@ perf_rf
 
 ```{r}
 # Training the model on training data
-levels(trainData_mort$Mortality) <- c("No", "Yes")
-model_xgbdart = train(Mortality ~ ., data=trainData_mort, method='xgbDART', tuneLength= 5, trControl = fitControl)
-#model_xgbdart
-
-# Testing it on test data
-
-varimp_xgbdart <- varImp(model_xgbdart)
-
-varimp_xgbdart
-
-#plot(varimp_xgbdart, main="Variable Importance with XG Boost")
-
-levels(testData_mort$Mortality) <- c("No", "Yes")
-
-predicted = predict(model_xgbdart,testData_mort[,c(1:47)])
-
-perf_xgbdart = confusionMatrix(reference = testData_mort$Mortality, data = predicted, mode='everything')
-
-perf_xgbdart
+# levels(trainData_mort$Mortality) <- c("No", "Yes")
+# model_xgbdart = train(Mortality ~ ., data=trainData_mort, method='xgbDART', tuneLength= 5, trControl = fitControl)
+# #model_xgbdart
+# 
+# # Testing it on test data
+# 
+# varimp_xgbdart <- varImp(model_xgbdart)
+# 
+# varimp_xgbdart
+# 
+# #plot(varimp_xgbdart, main="Variable Importance with XG Boost")
+# 
+# levels(testData_mort$Mortality) <- c("No", "Yes")
+# 
+# predicted = predict(model_xgbdart,testData_mort[,c(1:47)])
+# 
+# perf_xgbdart = confusionMatrix(reference = testData_mort$Mortality, data = predicted, mode='everything')
+# 
+# perf_xgbdart
 
 
 ```
@@ -1399,26 +1399,26 @@ perf_rf
 ### XG Boost Dart 
 
 ```{r}
-# Training the model on training data
-levels(trainData_mort2$Mortality) <- c("No", "Yes")
-model_xgbdart = train(Mortality ~ ., data=trainData_mort2, method='xgbDART', tuneLength= 5, trControl = fitControl)
-#model_xgbdart
-
-# Testing it on test data
-
-varimp_xgbdart <- varImp(model_xgbdart)
-
-varimp_xgbdart
-
-#plot(varimp_xgbdart, main="Variable Importance with XG Boost")
-
-levels(testData_mort2$Mortality) <- c("No", "Yes")
-
-predicted = predict(model_xgbdart,testData_mort2[,c(1:50)])
-
-perf_xgbdart = confusionMatrix(reference = testData_mort2$Mortality, data = predicted, mode='everything')
-
-perf_xgbdart
+# # Training the model on training data
+# levels(trainData_mort2$Mortality) <- c("No", "Yes")
+# model_xgbdart = train(Mortality ~ ., data=trainData_mort2, method='xgbDART', tuneLength= 5, trControl = fitControl)
+# #model_xgbdart
+# 
+# # Testing it on test data
+# 
+# varimp_xgbdart <- varImp(model_xgbdart)
+# 
+# varimp_xgbdart
+# 
+# #plot(varimp_xgbdart, main="Variable Importance with XG Boost")
+# 
+# levels(testData_mort2$Mortality) <- c("No", "Yes")
+# 
+# predicted = predict(model_xgbdart,testData_mort2[,c(1:50)])
+# 
+# perf_xgbdart = confusionMatrix(reference = testData_mort2$Mortality, data = predicted, mode='everything')
+# 
+# perf_xgbdart
 
 
 ```
