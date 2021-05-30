@@ -20,6 +20,7 @@ library(zoo)
 
 ```{r}
 cdc_dec20 = read.csv('COVID_Cases_Restricted_Detailed_12042020.csv')
+cdc_may21 = read.csv('COVID_Cases_Restricted_Detailed_05112021_Part_1.csv')
 
 head(cdc_dec20,10)
 glimpse(cdc_dec20)
@@ -42,6 +43,7 @@ test = test %>%
 test
 ```
 
+# Data for March to Dec 2020
 ```{r}
 cdc_dec20_filtered = select(cdc_dec20, pos_spec_dt) %>% 
   filter(pos_spec_dt != '')
@@ -60,6 +62,27 @@ str(cdc_dec20_ts)
 #https://rstudio-pubs-static.s3.amazonaws.com/504487_1975b93a0ed04f33aab708cb536b8d0e.html
 
 write.zoo(cdc_dec20_ts, sep = ',', file = "cdc_dec20_ts.csv")
+```
+
+# Data for May 2021
+```{r}
+cdc_may21_filtered = select(cdc_may21, pos_spec_dt) %>% 
+  filter(pos_spec_dt != '')
+
+cdc_may21_filtered = cdc_may21_filtered %>% 
+  mutate(pos_spec_dt = as.Date(pos_spec_dt)) %>% 
+  arrange(pos_spec_dt) %>% 
+  group_by(pos_spec_dt) %>% 
+  summarize(
+    n = n()
+  )
+
+cdc_may21_ts = xts(as.numeric(cdc_may21_filtered$n), order.by = as.Date(cdc_may21_filtered$pos_spec_dt))
+
+str(cdc_may21_ts)
+#https://rstudio-pubs-static.s3.amazonaws.com/504487_1975b93a0ed04f33aab708cb536b8d0e.html
+
+write.zoo(cdc_may21_ts, sep = ',', file = "cdc_may21_ts.csv")
 ```
 
 
