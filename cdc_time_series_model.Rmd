@@ -1,5 +1,6 @@
 Time Series Analysis ARIMA basic model
 
+https://medium.com/@kfoofw/seasonal-lags-sarima-model-fa671a858729
 ```{r, message = FALSE}
 
 library(ggplot2)
@@ -59,7 +60,7 @@ plot.xts(cdc_xts_diff1, col = "dark green")
 ```
 
 ```{r}
-cdc_xts_may_diff1 = diff(cdc_xts_may, differences = 1)
+cdc_xts_may_diff1 = diff(cdc_xts_may, differences = 12)
 plot.xts(cdc_xts_may_diff1, col = "dark green")
 ```
 
@@ -92,7 +93,22 @@ acf2(cdc_xts_diff1)
 ```{r}
 #Acf gradually declines.
 #Acf(cdc_xts_may_diff1, lag.max = 60)
+
+cdc_xts_may_diff1 = diff(cdc_xts_may, lag = 12)
+
 acf2(cdc_xts_may_diff1)
+acf2(diff(cdc_xts_may, 12))
+
+acf2(diff(diff(cdc_xts_may,7),12))
+
+cdc_xts_may_lag712 = diff(diff(cdc_xts_may,7),12)
+```
+```{r}
+cdc_xts_may_diff7 = diff(cdc_xts_may_diff1, differences = 7)
+plot.xts(cdc_xts_may_diff7, col = "dark green")
+```
+```{r}
+acf2(diff(cdc_xts_may_diff1,7))
 ```
 
 #https://towardsdatascience.com/identifying-ar-and-ma-terms-using-acf-and-pacf-plots-in-time-series-forecasting-ccb9fd073db8
@@ -124,6 +140,10 @@ print(cdc_arima_May_702)
 ```{r}
 cdc_arima_May_732 <- auto.arima(head(cdc_xts_may, -32), max.p = 7, max.q = 3, max.d = 2) # excluding last 240 time series as test data
 print(cdc_arima_May_732)
+```
+
+```{r}
+sarima(cdc_xts_may, )
 ```
 
 ```{r}
