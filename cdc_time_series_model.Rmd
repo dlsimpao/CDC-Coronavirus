@@ -18,6 +18,7 @@ library(dygraphs)
 library(assertthat)
 ```
 
+# Import time series data
 ```{r}
 cdc_dec20_ts = read.csv('cdc_dec20_ts.csv') %>% 
   transmute(Date = as.Date(X2020.01.01),
@@ -32,6 +33,7 @@ cdc_may21_ts = read.csv('cdc_may21_ts.csv') %>%
 cdc_xts_may = xts(cdc_may21_ts$Values, order.by = cdc_may21_ts$Date)
 ```
 
+# Plot
 ```{r}
 dygraph(cdc_xts, xlab = "Time", ylab = "Cases", main = "Time Series")
 
@@ -41,7 +43,7 @@ dygraph(cdc_xts, xlab = "Time", ylab = "Cases", main = "Time Series")
 dygraph(cdc_xts_may, xlab = "Time", ylab = "Cases", main = "Time Series")
 ```
 
-
+# Stationarity Testing
 ```{r}
 # test for stationarity
 # Augmented Dickey-Fuller test
@@ -55,12 +57,12 @@ adf.test(cdc_xts_may, alternative = "stationary", k = 0)
 ```
 
 ```{r}
-cdc_xts_diff1 = diff(cdc_xts, differences = 1)
+cdc_xts_diff1 = diff(cdc_xts)
 plot.xts(cdc_xts_diff1, col = "dark green")
 ```
 
 ```{r}
-cdc_xts_may_diff1 = diff(cdc_xts_may, differences = 12)
+cdc_xts_may_diff1 = diff(cdc_xts_may)
 plot.xts(cdc_xts_may_diff1, col = "dark green")
 ```
 
@@ -75,9 +77,7 @@ adf.test(na.omit(cdc_xts_may_diff1), alternative = "stationary", k = 0)
 ```{r}
 findfrequency(cdc_xts)
 findfrequency(cdc_xts_diff1)
-```
 
-```{r}
 findfrequency(cdc_xts_may)
 findfrequency(cdc_xts_may_diff1)
 ```
@@ -86,7 +86,8 @@ findfrequency(cdc_xts_may_diff1)
 ```{r}
 #Acf gradually declines.
 #Acf(cdc_xts_diff1, lag.max = 60)
-acf2(cdc_xts_diff1)
+acf2(diff(cdc_xts),8)
+cdc_nov_acfObj = acf2(diff(diff(cdc_xts),7),8)
 ```
 
 # ACF: May xts
@@ -94,21 +95,10 @@ acf2(cdc_xts_diff1)
 #Acf gradually declines.
 #Acf(cdc_xts_may_diff1, lag.max = 60)
 
-cdc_xts_may_diff1 = diff(cdc_xts_may, lag = 12)
+acf2(diff(cdc_xts_may),12)
 
-acf2(cdc_xts_may_diff1)
-acf2(diff(cdc_xts_may, 12))
-
-acf2(diff(diff(cdc_xts_may,7),12))
-
-cdc_xts_may_lag712 = diff(diff(cdc_xts_may,7),12)
-```
-```{r}
-cdc_xts_may_diff7 = diff(cdc_xts_may_diff1, differences = 7)
-plot.xts(cdc_xts_may_diff7, col = "dark green")
-```
-```{r}
-acf2(diff(cdc_xts_may_diff1,7))
+#We're using this one 
+cdc_may_acfObj = acf2(diff(diff(cdc_xts_may),7),12)
 ```
 
 #https://towardsdatascience.com/identifying-ar-and-ma-terms-using-acf-and-pacf-plots-in-time-series-forecasting-ccb9fd073db8
@@ -117,88 +107,49 @@ The plots suggests, we use an autoregressive model with lag = 7. If ACF plot sho
 
 # Training the ARIMA Model
 #pre Nov arima
+# ```{r}
+# cdc_arima_preNov_702 <- auto.arima(head(cdc_xts, -32), max.p = 7, max.q = 0, max.d = 2) # excluding last 240 time series as test data
+# print(cdc_arima_preNov_702)
+# ```
+# 
+# 
+# ```{r}
+# cdc_arima_preNov_732 <- auto.arima(head(cdc_xts, -32), max.p = 7, max.q = 3, max.d = 2) # excluding last 240 time series as test data
+# print(cdc_arima_preNov_732)
+# ```
+# 
+# # May auto.arima
+# ```{r}
+# cdc_arima_May_702 <- auto.arima(head(cdc_xts_may, -32), max.p = 7, max.q = 0, max.d = 2) # excluding last 240 time series as test data
+# print(cdc_arima_May_702)
+# ```
+# 
+# ```{r}
+# cdc_arima_May_732 <- auto.arima(head(cdc_xts_may, -32), max.p = 7, max.q = 3, max.d = 2) # excluding last 240 time series as test data
+# print(cdc_arima_May_732)
+# ```
+
 ```{r}
-cdc_arima_preNov_702 <- auto.arima(head(cdc_xts, -32), max.p = 7, max.q = 0, max.d = 2) # excluding last 240 time series as test data
-print(cdc_arima_preNov_702)
+acf2(diff(diff(cdc_xts_may),7),12)
+sarima(cdc_xts_may, p = 0, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
+sarima(cdc_xts_may, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
+```
+```{r}
+acf2(diff(diff(cdc_xts),7),12)
+sarima(cdc_xts, p = 0, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
+sarima(cdc_xts, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
+```
+
+```{r}
+sarima.for(cdc_xts_may, 5, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7) 
+```
+
+```{r}
+sarima.for(dc_xts, 5, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
 ```
 
 
 
-```{r}
-cdc_arima_preNov_732 <- auto.arima(head(cdc_xts, -32), max.p = 7, max.q = 3, max.d = 2) # excluding last 240 time series as test data
-print(cdc_arima_preNov_732)
-```
-
-# May auto.arima
-```{r}
-cdc_arima_May_702 <- auto.arima(head(cdc_xts_may, -32), max.p = 7, max.q = 0, max.d = 2) # excluding last 240 time series as test data
-print(cdc_arima_May_702)
-```
-
-
-
-```{r}
-cdc_arima_May_732 <- auto.arima(head(cdc_xts_may, -32), max.p = 7, max.q = 3, max.d = 2) # excluding last 240 time series as test data
-print(cdc_arima_May_732)
-```
-
-```{r}
-sarima(cdc_xts_may, )
-```
-
-```{r}
-xtsforecast_Nov_702 <- forecast(cdc_arima_preNov_702, h = 32) 
-
-accuracy(xtsforecast_Nov_702, head(tail(cdc_xts, 32),32))
-```
-
-```{r}
-xtsforecast_Nov_732 <- forecast(cdc_arima_preNov_732, h = 32) 
-accuracy(xtsforecast_Nov_732, head(tail(cdc_xts, 32),32))
-```
-
-```{r}
-xtsforecast_May_702 <- forecast(cdc_arima_May_702, h = 32) 
-
-accuracy(xtsforecast_May_702, head(tail(cdc_xts_may, 32),32))
-```
-
-```{r}
-xtsforecast_May_732 <- forecast(cdc_arima_May_732, h = 32) 
-accuracy(xtsforecast_May_732, head(tail(cdc_xts_may, 32),32))
-```
-
-
-```{r}
-autoplot(xtsforecast_Nov_702)
-```
-
-```{r}
-autoplot(xtsforecast_Nov_732)
-```
-
-```{r}
-autoplot(xtsforecast_May_702)
-```
-
-```{r}
-autoplot(xtsforecast_May_732)
-```
-
-```{r}
-checkresiduals(xtsforecast_Nov_702)
-```
-```{r}
-checkresiduals(xtsforecast_Nov_732)
-```
-
-```{r}
-checkresiduals(xtsforecast_May_702)
-```
-
-```{r}
-checkresiduals(xtsforecast_May_732)
-```
 
 # NOV 2020 plots
 ```{r}
