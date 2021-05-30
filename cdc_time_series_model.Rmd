@@ -19,10 +19,21 @@ cdc_dec20_ts = read.csv('cdc_dec20_ts.csv') %>%
             Values = X2)
 
 cdc_xts = xts(cdc_dec20_ts$Values, order.by = cdc_dec20_ts$Date)
+
+cdc_may21_ts = read.csv('cdc_may21_ts.csv') %>% 
+  transmute(Date = as.Date(X2020.01.01),
+            Values = X15)
+
+cdc_xts_may = xts(cdc_may21_ts$Values, order.by = cdc_may21_ts$Date)
 ```
 
 ```{r}
 dygraph(cdc_xts, xlab = "Time", ylab = "Cases", main = "Time Series")
+
+```
+
+```{r}
+dygraph(cdc_xts_may, xlab = "Time", ylab = "Cases", main = "Time Series")
 ```
 
 
@@ -33,12 +44,27 @@ adf.test(cdc_xts, alternative = "stationary", k = 0)
 ```
 
 ```{r}
+# test for stationarity
+# Augmented Dickey-Fuller test
+adf.test(cdc_xts_may, alternative = "stationary", k = 0)
+```
+
+```{r}
 cdc_xts_diff1 = diff(cdc_xts, differences = 1)
 plot.xts(cdc_xts_diff1, col = "dark green")
 ```
 
 ```{r}
+cdc_xts_may_diff1 = diff(cdc_xts_may, differences = 1)
+plot.xts(cdc_xts_may_diff1, col = "dark green")
+```
+
+```{r}
 adf.test(na.omit(cdc_xts_diff1), alternative = "stationary", k = 0)
+```
+
+```{r}
+adf.test(na.omit(cdc_xts_may_diff1), alternative = "stationary", k = 0)
 ```
 
 ```{r}
@@ -47,15 +73,33 @@ findfrequency(cdc_xts_diff1)
 ```
 
 ```{r}
+findfrequency(cdc_xts_may)
+findfrequency(cdc_xts_may_diff1)
+```
+
+# ACF plot: Nov xts
+```{r}
 #Acf gradually declines.
 Acf(cdc_xts_diff1, lag.max = 60)
 
 ```
-
 ```{r}
 Acf(cdc_xts_diff1, lag.max=60, plot=FALSE)
 ```
 
+# ACF: May xts
+```{r}
+#Acf gradually declines.
+Acf(cdc_xts_may_diff1, lag.max = 60)
+
+```
+```{r}
+#Acf gradually declines.
+Acf(cdc_xts_may_diff1, lag.max = 60, plot = FALSE)
+
+```
+
+#PACF: Nov 2020 
 ```{r}
 Pacf(cdc_xts_diff1, lag.max = 60)
 ```
@@ -64,11 +108,21 @@ Pacf(cdc_xts_diff1, lag.max = 60)
 #Pacf cuts off at lag 7
 Pacf(cdc_xts_diff1, lag.max=60, plot=FALSE)
 ```
+# PACF: May 2021
+```{r}
+Pacf(cdc_xts_may_diff1, lag.max = 60)
+```
+
+```{r}
+#Pacf cuts off at lag 7
+Pacf(cdc_xts_may_diff1, lag.max=60, plot=FALSE)
+```
 #https://towardsdatascience.com/identifying-ar-and-ma-terms-using-acf-and-pacf-plots-in-time-series-forecasting-ccb9fd073db8
 
 The plots suggests, we use an autoregressive model with lag = 7. If ACF plot shows sharp drop off and PACF plot shows gradual decline, we go with MA model. If ACF plot shows gradual decline and PACF shows sharp drop off, we go with AR model. If both shows gradual decline, we use ARMA model.
 
 # Training the ARIMA Model
+#pre Nov arima
 ```{r}
 cdc_arima_preNov_702 <- auto.arima(head(cdc_xts, -32), max.p = 7, max.q = 0, max.d = 2) # excluding last 240 time series as test data
 print(cdc_arima_preNov_702)
@@ -79,6 +133,19 @@ print(cdc_arima_preNov_702)
 ```{r}
 cdc_arima_preNov_732 <- auto.arima(head(cdc_xts, -32), max.p = 7, max.q = 3, max.d = 2) # excluding last 240 time series as test data
 print(cdc_arima_preNov_732)
+```
+
+# May auto.arima
+```{r}
+cdc_arima_May_702 <- auto.arima(head(cdc_xts_may, -32), max.p = 7, max.q = 0, max.d = 2) # excluding last 240 time series as test data
+print(cdc_arima_May_702)
+```
+
+
+
+```{r}
+cdc_arima_May_732 <- auto.arima(head(cdc_xts_may, -32), max.p = 7, max.q = 3, max.d = 2) # excluding last 240 time series as test data
+print(cdc_arima_May_732)
 ```
 
 ```{r}
@@ -93,11 +160,31 @@ accuracy(xtsforecast_Nov_732, head(tail(cdc_xts, 32),32))
 ```
 
 ```{r}
+xtsforecast_May_702 <- forecast(cdc_arima_May_702, h = 32) 
+
+accuracy(xtsforecast_May_702, head(tail(cdc_xts_may, 32),32))
+```
+
+```{r}
+xtsforecast_May_732 <- forecast(cdc_arima_May_732, h = 32) 
+accuracy(xtsforecast_May_732, head(tail(cdc_xts_may, 32),32))
+```
+
+
+```{r}
 autoplot(xtsforecast_Nov_702)
 ```
 
 ```{r}
 autoplot(xtsforecast_Nov_732)
+```
+
+```{r}
+autoplot(xtsforecast_May_702)
+```
+
+```{r}
+autoplot(xtsforecast_May_732)
 ```
 
 ```{r}
@@ -107,7 +194,15 @@ checkresiduals(xtsforecast_Nov_702)
 checkresiduals(xtsforecast_Nov_732)
 ```
 
+```{r}
+checkresiduals(xtsforecast_May_702)
+```
 
+```{r}
+checkresiduals(xtsforecast_May_732)
+```
+
+# NOV 2020 plots
 ```{r}
 ggplot(data.frame(residuals = xtsforecast_Nov_702$residuals), aes(residuals)) + 
   geom_histogram(bins = 50, aes(y = ..density..), col = "red", fill = "red", alpha = 0.3) + geom_density()
@@ -121,4 +216,20 @@ ggplot(data.frame(residuals = xtsforecast_Nov_732$residuals), aes(residuals)) +
 ```{r}
 sum(xtsforecast_Nov_702$upper[,2])
 sum(xtsforecast_Nov_732$upper[,2])
+```
+
+# May 2021 plots
+```{r}
+ggplot(data.frame(residuals = xtsforecast_May_702$residuals), aes(residuals)) + 
+  geom_histogram(bins = 50, aes(y = ..density..), col = "red", fill = "red", alpha = 0.3) + geom_density()
+```
+
+```{r}
+ggplot(data.frame(residuals = xtsforecast_May_732$residuals), aes(residuals)) + 
+  geom_histogram(bins = 50, aes(y = ..density..), col = "red", fill = "red", alpha = 0.3) + geom_density()
+```
+
+```{r}
+sum(xtsforecast_May_702$upper[,2])
+sum(xtsforecast_May_732$upper[,2])
 ```
