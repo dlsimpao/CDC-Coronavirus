@@ -37,7 +37,7 @@ cdc_classification[,c(1,2,4,7:31)] = lapply(cdc_classification[,c(1,2,4,7:31)],f
 
 ```{r}
 set.seed(100)
-subset_classification <- cdc_classification %>% sample_frac(0.20)
+subset_classification <- cdc_classification %>% sample_frac(0.05)
 
 # Step 1: Get row numbers for the training data
 trainRowNumbers <- createDataPartition(subset_classification$hosp_yn, p=0.75, list=FALSE)
@@ -490,8 +490,34 @@ perf_lr
 #auc_hosp_lr = auc(roc_hosp_lr)
 #auc_hosp_lr
 
-```
 
+
+```
+ 0 2671   36
+         1   11   14
+                                          
+               Accuracy : 0.9828          
+                 95% CI : (0.9772, 0.9873)
+    No Information Rate : 0.9817          
+    P-Value [Acc > NIR] : 0.3681960       
+                                          
+                  Kappa : 0.3656          
+                                          
+ Mcnemar's Test P-Value : 0.0004639       
+                                          
+            Sensitivity : 0.9959          
+            Specificity : 0.2800          
+         Pos Pred Value : 0.9867          
+         Neg Pred Value : 0.5600          
+              Precision : 0.9867          
+                 Recall : 0.9959          
+                     F1 : 0.9913          
+             Prevalence : 0.9817          
+         Detection Rate : 0.9777          
+   Detection Prevalence : 0.9908          
+      Balanced Accuracy : 0.6379          
+                                          
+       'Positive' Class : 0  
 # FIT CONTROL
 
 ```{r}
@@ -560,7 +586,31 @@ perf_rf = confusionMatrix(reference = testData_icu$ICU, data = predicted, mode='
 perf_rf
 
 ```
-
+ No  2678   42
+       Yes    4    8
+                                          
+               Accuracy : 0.9832          
+                 95% CI : (0.9776, 0.9876)
+    No Information Rate : 0.9817          
+    P-Value [Acc > NIR] : 0.3148          
+                                          
+                  Kappa : 0.2528          
+                                          
+ Mcnemar's Test P-Value : 4.888e-08       
+                                          
+            Sensitivity : 0.9985          
+            Specificity : 0.1600          
+         Pos Pred Value : 0.9846          
+         Neg Pred Value : 0.6667          
+              Precision : 0.9846          
+                 Recall : 0.9985          
+                     F1 : 0.9915          
+             Prevalence : 0.9817          
+         Detection Rate : 0.9802          
+   Detection Prevalence : 0.9956          
+      Balanced Accuracy : 0.5793          
+                                          
+       'Positive' Class : No   
 
 ### XG Boost Dart 
 
@@ -700,6 +750,32 @@ perf_lr
 
 ```
 
+ 0 2703   14
+         1    7    8
+                                          
+               Accuracy : 0.9923          
+                 95% CI : (0.9883, 0.9952)
+    No Information Rate : 0.9919          
+    P-Value [Acc > NIR] : 0.4713          
+                                          
+                  Kappa : 0.4287          
+                                          
+ Mcnemar's Test P-Value : 0.1904          
+                                          
+            Sensitivity : 0.9974          
+            Specificity : 0.3636          
+         Pos Pred Value : 0.9948          
+         Neg Pred Value : 0.5333          
+              Precision : 0.9948          
+                 Recall : 0.9974          
+                     F1 : 0.9961          
+             Prevalence : 0.9919          
+         Detection Rate : 0.9894          
+   Detection Prevalence : 0.9945          
+      Balanced Accuracy : 0.6805          
+                                          
+       'Positive' Class : 0   
+
 # FIT CONTROL
 
 ```{r}
@@ -740,6 +816,31 @@ perf_svm
 
 
 ```
+No  2704   17
+       Yes    6    5
+                                          
+               Accuracy : 0.9916          
+                 95% CI : (0.9874, 0.9947)
+    No Information Rate : 0.9919          
+    P-Value [Acc > NIR] : 0.63775         
+                                          
+                  Kappa : 0.2993          
+                                          
+ Mcnemar's Test P-Value : 0.03706         
+                                          
+            Sensitivity : 0.9978          
+            Specificity : 0.2273          
+         Pos Pred Value : 0.9938          
+         Neg Pred Value : 0.4545          
+              Precision : 0.9938          
+                 Recall : 0.9978          
+                     F1 : 0.9958          
+             Prevalence : 0.9919          
+         Detection Rate : 0.9898          
+   Detection Prevalence : 0.9960          
+      Balanced Accuracy : 0.6125          
+                                          
+       'Positive' Class : No     
 
 
 #### Random Forest
@@ -768,6 +869,40 @@ perf_rf = confusionMatrix(reference = testData_vent$Ventilator, data = predicted
 perf_rf
 
 ```
+
+The metric "Accuracy" was not in the result set. ROC will be used instead.rf variable importance
+
+  only 20 most important variables shown (out of 47)
+
+Confusion Matrix and Statistics
+
+          Reference
+Prediction   No  Yes
+       No  2710   22
+       Yes    0    0
+                                          
+               Accuracy : 0.9919          
+                 95% CI : (0.9878, 0.9949)
+    No Information Rate : 0.9919          
+    P-Value [Acc > NIR] : 0.5564          
+                                          
+                  Kappa : 0               
+                                          
+ Mcnemar's Test P-Value : 7.562e-06       
+                                          
+            Sensitivity : 1.0000          
+            Specificity : 0.0000          
+         Pos Pred Value : 0.9919          
+         Neg Pred Value :    NaN          
+              Precision : 0.9919          
+                 Recall : 1.0000          
+                     F1 : 0.9960          
+             Prevalence : 0.9919          
+         Detection Rate : 0.9919          
+   Detection Prevalence : 1.0000          
+      Balanced Accuracy : 0.5000          
+                                          
+       'Positive' Class : No  
 
 
 ### XG Boost Dart 
@@ -846,6 +981,8 @@ str(testData_vent2)
 
 # Logistic Reg
 
+#### ERROR Error in eval(predvars, data, env) : object 'age_group.80..Years' not found
+
 ```{r}
 library(glmnet)
 # Set the seed for reproducibility
@@ -922,6 +1059,8 @@ fitControl <- trainControl(
 
 #### SVM 
 
+#ERROR age_group...80 not found
+
 ```{r}
 
 # Training the model on training data
@@ -951,7 +1090,7 @@ perf_svm
 
 
 #### Random Forest
-
+#ERROR
 
 ```{r}
 # Training the model on training data
@@ -1117,6 +1256,31 @@ perf_lr
 #auc_hosp_lr
 
 ```
+0 2686   29
+         1    7   10
+                                          
+               Accuracy : 0.9868          
+                 95% CI : (0.9818, 0.9908)
+    No Information Rate : 0.9857          
+    P-Value [Acc > NIR] : 0.3515733       
+                                          
+                  Kappa : 0.3515          
+                                          
+ Mcnemar's Test P-Value : 0.0004653       
+                                          
+            Sensitivity : 0.9974          
+            Specificity : 0.2564          
+         Pos Pred Value : 0.9893          
+         Neg Pred Value : 0.5882          
+              Precision : 0.9893          
+                 Recall : 0.9974          
+                     F1 : 0.9933          
+             Prevalence : 0.9857          
+         Detection Rate : 0.9832          
+   Detection Prevalence : 0.9938          
+      Balanced Accuracy : 0.6269          
+                                          
+       'Positive' Class : 0   
 
 # FIT CONTROL
 
@@ -1158,6 +1322,31 @@ perf_svm
 
 
 ```
+No  2683   33
+       Yes   10    6
+                                          
+               Accuracy : 0.9843          
+                 95% CI : (0.9789, 0.9886)
+    No Information Rate : 0.9857          
+    P-Value [Acc > NIR] : 0.7698444       
+                                          
+                  Kappa : 0.2116          
+                                          
+ Mcnemar's Test P-Value : 0.0007937       
+                                          
+            Sensitivity : 0.9963          
+            Specificity : 0.1538          
+         Pos Pred Value : 0.9878          
+         Neg Pred Value : 0.3750          
+              Precision : 0.9878          
+                 Recall : 0.9963          
+                     F1 : 0.9921          
+             Prevalence : 0.9857          
+         Detection Rate : 0.9821          
+   Detection Prevalence : 0.9941          
+      Balanced Accuracy : 0.5751          
+                                          
+       'Positive' Class : No   
 
 
 #### Random Forest
@@ -1186,6 +1375,32 @@ perf_rf = confusionMatrix(reference = testData_mort$Mortality, data = predicted,
 perf_rf
 
 ```
+
+No  2674   29
+       Yes   19   10
+                                         
+               Accuracy : 0.9824         
+                 95% CI : (0.9768, 0.987)
+    No Information Rate : 0.9857         
+    P-Value [Acc > NIR] : 0.9334         
+                                         
+                  Kappa : 0.2854         
+                                         
+ Mcnemar's Test P-Value : 0.1939         
+                                         
+            Sensitivity : 0.9929         
+            Specificity : 0.2564         
+         Pos Pred Value : 0.9893         
+         Neg Pred Value : 0.3448         
+              Precision : 0.9893         
+                 Recall : 0.9929         
+                     F1 : 0.9911         
+             Prevalence : 0.9857         
+         Detection Rate : 0.9788         
+   Detection Prevalence : 0.9894         
+      Balanced Accuracy : 0.6247         
+                                         
+       'Positive' Class : No  
 
 
 ### XG Boost Dart 
@@ -1263,6 +1478,7 @@ str(testData_mort2)
 
 
 # Logistic Reg
+# Error in eval(predvars, data, env) : object 'age_group.60...69.Years' not found
 
 ```{r}
 library(glmnet)
@@ -1339,6 +1555,7 @@ fitControl <- trainControl(
 ```
 
 #### SVM 
+#ERROR - age_group 60...69 not found
 
 ```{r}
 
