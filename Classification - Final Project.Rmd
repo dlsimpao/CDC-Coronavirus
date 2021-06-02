@@ -1,5 +1,22 @@
+---
+title: "Classification - Final Project"
+author: 'Falak Shah (SID: 914663151)'
+date: "5/23/2021"
+output: html_document
+---
 
-```{r, message = FALSE}
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+setwd("C:/Users/Falak/Desktop/UC Davis - Classes/Spring Quarter '21/STA 160")
+```
+
+
+
+
+```{r}
 library(tidyverse)
 library(timeDate)
 library(ggplot2)
@@ -19,6 +36,10 @@ library(faux)
 library(DataExplorer)
 #install.packages('e1071', dependencies=TRUE)
 library(e1071)
+#install.packages("pRoc")
+library(pROC)
+
+
 
 ```
 
@@ -53,7 +74,7 @@ testData <- subset_classification[-trainRowNumbers,]
 ```
 
 
-
+## For classification of Hospitalisation (including only symptoms)
 
 
 
@@ -103,6 +124,17 @@ str(testData_hosp)
 
 ```
 
+# FIT CONTROL
+
+```{r}
+fitControl <- trainControl(
+    method = 'cv',                   # k-fold cross validation
+    number = 5,                      # number of folds
+    savePredictions = 'final',       # saves predictions for optimal tuning parameter
+    classProbs = TRUE,                  # should class probabilities be returned
+    summaryFunction=twoClassSummary  # results summary function
+) 
+```
 
 
 
@@ -138,67 +170,41 @@ my_glmnet$grid <- function (x, y, len = NULL, search = "grid") {
 }
 
 
+levels(trainData_hosp$Hosp) <- c("No","Yes")
+
 # Train the model using randomForest and predict on the training data itself.
-model_logistic = train(Hosp ~ ., data=trainData_hosp, method= my_glmnet)
+model_logistic_hosp = train(Hosp ~ ., data=trainData_hosp, method= my_glmnet,trControl = fitControl)
 
-plot(model_logistic, main="Model Accuracies with LR")
+model_logistic_hosp
 
-varimp_lr <- varImp(model_logistic)
+#plot(model_logistic, main="Model Accuracies with LR")
 
-varimp_lr
+varimp_lr_hosp <- varImp(model_logistic_hosp)
+
+varimp_lr_hosp
 
 #plot(varimp_lr, main="Variable Importance with LR")
 
-predicted = predict(model_logistic,testData_hosp[,c(1:47)])
+levels(testData_hosp$Hosp) <- c("No", "Yes")
 
-perf_lr = confusionMatrix(reference = testData_hosp$Hosp, data = predicted, mode='everything')
+predicted = predict(model_logistic_hosp,testData_hosp[,c(1:47)])
 
-perf_lr
+perf_lr_hosp = confusionMatrix(reference = testData_hosp$Hosp, data = predicted, mode='everything')
+
+perf_lr_hosp
 
 
-```
+roc_hosp_lr = roc(as.integer(testData_hosp$Hosp),as.integer(predicted))
+#plot(roc_hosp_lr)
 
-Accuracy : 0.9462          
-                 95% CI : (0.9371, 0.9544)
-    No Information Rate : 0.9198          
-    P-Value [Acc > NIR] : 5.181e-08       
-                                          
-                  Kappa : 0.5543          
-                                          
- Mcnemar's Test P-Value : 1.311e-12       
-                                          
-            Sensitivity : 0.9881          
-            Specificity : 0.4658          
-         Pos Pred Value : 0.9550          
-         Neg Pred Value : 0.7727          
-              Precision : 0.9550          
-                 Recall : 0.9881          
-                     F1 : 0.9712          
-             Prevalence : 0.9198          
-         Detection Rate : 0.9089          
-   Detection Prevalence : 0.9517          
-      Balanced Accuracy : 0.7269          
-                                          
-       'Positive' Class : 0  
+auc_hosp_lr = auc(roc_hosp_lr)
+auc_hosp_lr
 
-```{r}
-fitControl <- trainControl(
-    method = 'cv',                   # k-fold cross validation
-    number = 5,                      # number of folds
-    savePredictions = 'final',       # saves predictions for optimal tuning parameter
-    classProbs = T,                  # should class probabilities be returned
-    summaryFunction=twoClassSummary  # results summary function
-) 
-```
+#0.7288 = AUC
 
-```{r}
-fitControl2 <- trainControl(
-    method = 'cv',                   # k-fold cross validation
-    number = 3,                      # number of folds
-    savePredictions = 'final',       # saves predictions for optimal tuning parameter
-    classProbs = T,                  # should class probabilities be returned
-    summaryFunction=twoClassSummary  # results summary function
-) 
+coef(model_logistic_hosp$finalModel,model_logistic$bestTune$lambda)
+
+
 ```
 
 
@@ -208,175 +214,123 @@ fitControl2 <- trainControl(
 
 # Training the model on training data
 levels(trainData_hosp$Hosp) <- c("No", "Yes")
-model_svmRadial = train(Hosp ~ ., data=trainData_hosp, method='svmRadial', tuneLength=15, trControl = fitControl)
-#model_svmRadial
 
-# Testing it on test data
+model_svm_hosp =train(Hosp ~ .,
+    data = trainData_hosp,
+    method = "svmRadial",
+    preProc = NULL,
+    trControl = fitControl)
 
-varimp_svm <- varImp(model_svmRadial)
+model_svm_hosp
 
-varimp_svm
+
+
+varimp_svm_hosp <- varImp(model_svmRadial)
+
+varimp_svm_hosp
 
 #plot(varimp_svm, main="Variable Importance with SVM")
 
 levels(testData_hosp$Hosp) <- c("No", "Yes")
 
-predicted = predict(model_svmRadial,testData_hosp[,c(1:47)])
+predicted = predict(model_svm_hosp,testData_hosp[,c(1:47)])
 
-perf_svm = confusionMatrix(reference = testData_hosp$Hosp, data = predicted, mode='everything')
+perf_svm_hosp = confusionMatrix(reference = testData_hosp$Hosp, data = predicted, mode='everything')
 
-perf_svm
+perf_svm_hosp
+
+roc_hosp_svm = roc(as.integer(testData_hosp$Hosp),as.integer(predicted))
+#plot(roc_hosp_svm)
+
+auc_hosp_svm = auc(roc_hosp_svm)
+auc_hosp_svm
+
+#auc = 0.7265
 
 
+coefs_hosp <- model_svm_hosp$finalModel@coef[[1]]
+mat_hosp <- model_svm_hosp$finalModel@xmatrix[[1]]
+
+w_hosp <- coefs_hosp %*% mat_hosp
+
+w_hosp
 
 ```
-Accuracy : 0.9458         
-                 95% CI : (0.9367, 0.954)
-    No Information Rate : 0.9198         
-    P-Value [Acc > NIR] : 7.987e-08      
-                                         
-                  Kappa : 0.5524         
-                                         
- Mcnemar's Test P-Value : 2.809e-12      
-                                         
-            Sensitivity : 0.9877         
-            Specificity : 0.4658         
-         Pos Pred Value : 0.9550         
-         Neg Pred Value : 0.7669         
-              Precision : 0.9550         
-                 Recall : 0.9877         
-                     F1 : 0.9710         
-             Prevalence : 0.9198         
-         Detection Rate : 0.9085         
-   Detection Prevalence : 0.9513         
-      Balanced Accuracy : 0.7267         
-                                         
-       'Positive' Class : No 
+
 
 #### Random Forest
 
 
-```{r}
+```{r,warning=FALSE}
 # Training the model on training data
 levels(trainData_hosp$Hosp) <- c("No", "Yes")
-model_rf = train(Hosp ~ ., data=trainData_hosp, method='rf', tuneLength= 10, trControl = fitControl)
+model_rf_hosp = train(Hosp ~ ., data=trainData_hosp, method='rf', tuneLength= 10, trControl = fitControl)
 #model_rf
 
 # Testing it on test data
 
-varimp_rf <- varImp(model_rf)
+varimp_rf_hosp <- varImp(model_rf_hosp)
 
-varimp_rf
+varimp_rf_hosp
+
 
 #plot(varimp_rf, main="Variable Importance with Random Forest")
 
 levels(testData_hosp$Hosp) <- c("No", "Yes")
 
-predicted = predict(model_rf,testData_hosp[,c(1:47)])
+predicted = predict(model_rf_hosp,testData_hosp[,c(1:47)])
 
-perf_rf = confusionMatrix(reference = testData_hosp$Hosp, data = predicted, mode='everything')
+perf_rf_hosp = confusionMatrix(reference = testData_hosp$Hosp, data = predicted, mode='everything')
 
-perf_rf
+perf_rf_hosp
+
+
+
+roc_hosp_rf = roc(as.integer(testData_hosp$Hosp),as.integer(predicted))
+plot(roc_hosp_rf)
+
+auc_hosp_rf = auc(roc_hosp_rf)
+auc_hosp_rf
+
+# auc = 0.7432
 
 ```
-        No  2486  124
-       Yes   27   95
-                                         
-               Accuracy : 0.9447         
-                 95% CI : (0.9355, 0.953)
-    No Information Rate : 0.9198         
-    P-Value [Acc > NIR] : 2.808e-07      
-                                         
-                  Kappa : 0.5302         
-                                         
- Mcnemar's Test P-Value : 5.612e-15      
-                                         
-            Sensitivity : 0.9893         
-            Specificity : 0.4338         
-         Pos Pred Value : 0.9525         
-         Neg Pred Value : 0.7787         
-              Precision : 0.9525         
-                 Recall : 0.9893         
-                     F1 : 0.9705         
-             Prevalence : 0.9198         
-         Detection Rate : 0.9100         
-   Detection Prevalence : 0.9553         
-      Balanced Accuracy : 0.7115         
-                                         
-       'Positive' Class : No     
+
 
 ### XG Boost Dart 
 
 ```{r}
 # Training the model on training data
-# levels(trainData_hosp$Hosp) <- c("No", "Yes")
-# model_xgbdart = train(Hosp ~ ., data=trainData_hosp, method='xgbDART', tuneLength= 3, trControl = fitControl2)
-# #model_xgbdart
-# 
-# # Testing it on test data
-# 
-# varimp_xgbdart <- varImp(model_xgbdart)
-# 
-# varimp_xgbdart
-# 
-# #plot(varimp_xgbdart, main="Variable Importance with XG Boost")
-# 
-# levels(testData_hosp$Hosp) <- c("No", "Yes")
-# 
-# predicted = predict(model_xgbdart,testData_hosp[,c(1:47)])
-# 
-# perf_xgbdart = confusionMatrix(reference = testData_hosp$Hosp, data = predicted, mode='everything')
-# 
-# #cv = 3, sample = 0.05,  
-# perf_xgbdart
+levels(trainData_hosp$Hosp) <- c("No", "Yes")
+model_xgbdart_hosp = train(Hosp ~ ., data=trainData_hosp, method='xgbDART', tuneLength= 5, trControl = fitControl)
+#model_xgbdart
 
-# abxchest_yn.0	100.000000		
-# pna_yn.0	97.153723		
-# medcond_yn.0	23.999002		
-# sob_yn.0	20.768095		
-# acuterespdistress_yn.0	18.395689		
-# age_group.80..Years	16.861363		
-# fever_yn.0	15.769595		
-# age_group.70...79.Years	12.923882		
-# headache_yn.1	6.320604		
-# age_group.50...59.Years	6.245333	
-# age_group.20...29.Years	6.105308		
-# runnose_yn.0	5.901823		
-# headache_yn.0	5.044246		
-# hc_work_yn.0	4.848716		
-# pna_yn.1	4.475765		
-# medcond_yn.1	4.301723		
-# age_group.30...39.Years	3.569835		
-# age_group.60...69.Years	3.011651		
-# age_group.10...19.Years	2.791275		
-# current_status.Laboratory.confirmed.case	2.758514
+# Testing it on test data
+
+varimp_xgbdart_hosp <- varImp(model_xgbdart_hosp)
+
+varimp_xgbdart_hosp
+
+#plot(varimp_xgbdart, main="Variable Importance with XG Boost")
+
+levels(testData_hosp$Hosp) <- c("No", "Yes")
+
+predicted = predict(model_xgbdart_hosp,testData_hosp[,c(1:47)])
+
+perf_xgbdart_hosp = confusionMatrix(reference = testData_hosp$Hosp, data = predicted, mode='everything')
+
+perf_xgbdart_hosp
+
+
+roc_hosp_xgb = roc(as.integer(testData_hosp$Hosp),as.integer(predicted))
+plot(roc_hosp_xgb)
+
+auc_hosp_xgb = auc(roc_hosp_xgb)
+auc_hosp_xgb
+
 ```
-    No  2482  116
-       Yes   31  103
-                                          
-               Accuracy : 0.9462          
-                 95% CI : (0.9371, 0.9544)
-    No Information Rate : 0.9198          
-    P-Value [Acc > NIR] : 5.181e-08       
-                                          
-                  Kappa : 0.5566          
-                                          
- Mcnemar's Test P-Value : 4.262e-12       
-                                          
-            Sensitivity : 0.9877          
-            Specificity : 0.4703          
-         Pos Pred Value : 0.9554          
-         Neg Pred Value : 0.7687          
-              Precision : 0.9554          
-                 Recall : 0.9877          
-                     F1 : 0.9712          
-             Prevalence : 0.9198          
-         Detection Rate : 0.9085          
-   Detection Prevalence : 0.9510          
-      Balanced Accuracy : 0.7290          
-                                          
-       'Positive' Class : No              
-                             
+
+
 
 
 ### FOR ICU
@@ -390,7 +344,6 @@ test_icu <- testData %>% select(c("current_status", "sex", "icu_yn", "hc_work_yn
 "cough_yn", "sob_yn", "nauseavomit_yn", "headache_yn", "abdom_yn", "diarrhea_yn", "medcond_yn","age_group"))
 
 #head(train_icu)
-
 
 
 # One-Hot Encoding
@@ -427,7 +380,7 @@ str(testData_icu)
 
 ```
 
-
+# Logistic Reg
 
 
 ```{r}
@@ -461,74 +414,42 @@ my_glmnet$grid <- function (x, y, len = NULL, search = "grid") {
   out
 }
 
+levels(trainData_icu$ICU) <- c("No","Yes")
 
-#levels(trainData_hosp$Hosp) <- c("Yes", "No")
+model_logistic_icu = train(ICU ~ ., data=trainData_icu, method= my_glmnet,trControl = fitControl)
 
-# Train the model using randomForest and predict on the training data itself.
-model_logistic = train(ICU ~ ., data=trainData_icu, method= my_glmnet)
+#plot(model_logistic, main="Model Accuracies with LR")
 
-plot(model_logistic, main="Model Accuracies with LR")
+varimp_lr_icu <- varImp(model_logistic_icu)
 
-varimp_lr <- varImp(model_logistic)
-
-varimp_lr
+varimp_lr_icu
 
 #plot(varimp_lr, main="Variable Importance with LR")
 
-#levels(testData_hosp$Hosp) <- c("Yes", "No")
+levels(testData_icu$ICU) <- c("No", "Yes")
 
-predicted = predict(model_logistic,testData_icu[,c(1:47)])
+predicted = predict(model_logistic_icu,testData_icu[,c(1:47)])
 
-perf_lr = confusionMatrix(reference = testData_icu$ICU, data = predicted, mode='everything')
+perf_lr_icu = confusionMatrix(reference = testData_icu$ICU, data = predicted, mode='everything')
 
-perf_lr
+perf_lr_icu
 
 
-#roc_hosp_lr = roc(as.integer(testData_hosp$Hosp),as.integer(predicted))
+roc_icu_lr = roc(as.integer(testData_icu$ICU),as.integer(predicted))
 #plot(roc_hosp_lr)
 
-#auc_hosp_lr = auc(roc_hosp_lr)
-#auc_hosp_lr
+auc_icu_lr = auc(roc_icu_lr)
+auc_icu_lr
 
+# auc = 0.6476
+
+
+
+coef(model_logistic_icu$finalModel,model_logistic_icu$bestTune$lambda)
 
 
 ```
- 0 2671   36
-         1   11   14
-                                          
-               Accuracy : 0.9828          
-                 95% CI : (0.9772, 0.9873)
-    No Information Rate : 0.9817          
-    P-Value [Acc > NIR] : 0.3681960       
-                                          
-                  Kappa : 0.3656          
-                                          
- Mcnemar's Test P-Value : 0.0004639       
-                                          
-            Sensitivity : 0.9959          
-            Specificity : 0.2800          
-         Pos Pred Value : 0.9867          
-         Neg Pred Value : 0.5600          
-              Precision : 0.9867          
-                 Recall : 0.9959          
-                     F1 : 0.9913          
-             Prevalence : 0.9817          
-         Detection Rate : 0.9777          
-   Detection Prevalence : 0.9908          
-      Balanced Accuracy : 0.6379          
-                                          
-       'Positive' Class : 0  
-# FIT CONTROL
 
-```{r}
-fitControl <- trainControl(
-    method = 'cv',                   # k-fold cross validation
-    number = 5,                      # number of folds
-    savePredictions = 'final',       # saves predictions for optimal tuning parameter
-    classProbs = T,                  # should class probabilities be returned
-    summaryFunction=twoClassSummary  # results summary function
-) 
-```
 
 #### SVM 
 
@@ -536,26 +457,49 @@ fitControl <- trainControl(
 
 # Training the model on training data
 levels(trainData_icu$ICU) <- c("No", "Yes")
-model_svmRadial = train(ICU ~ ., data=trainData_icu, method='svmRadial', tuneLength=15, trControl = fitControl)
-#model_svmRadial
+
+model_svm_icu =train(ICU ~ .,
+    data = trainData_icu,
+    method = "svmRadial",
+    preProc = NULL,
+    trControl = fitControl)
+
 
 # Testing it on test data
 
-varimp_svm <- varImp(model_svmRadial)
+varimp_svm_icu <- varImp(model_svm_icu)
 
-varimp_svm
+varimp_svm_icu
 
 #plot(varimp_svm, main="Variable Importance with SVM")
 
-levels(testData_hosp$Hosp) <- c("No", "Yes")
+levels(testData_icu$ICU) <- c("No", "Yes")
 
-predicted = predict(model_svmRadial,testData_icu[,c(1:47)])
+predicted = predict(model_svm_icu,testData_icu[,c(1:47)])
 
-perf_svm = confusionMatrix(reference = testData_icu$ICU, data = predicted, mode='everything')
+perf_svm_icu = confusionMatrix(reference = testData_icu$ICU, data = predicted, mode='everything')
 
-perf_svm
+perf_svm_icu
 
 
+roc_icu_svm = roc(as.integer(testData_icu$ICU),as.integer(predicted))
+#plot(roc_hosp_lr)
+
+auc_icu_svm = auc(roc_icu_svm)
+auc_icu_svm
+
+
+
+
+# auc = 0.6483
+
+
+coefs_icu <- model_svm_icu$finalModel@coef[[1]]
+mat_icu <- model_svm_icu$finalModel@xmatrix[[1]]
+
+w_icu <- coefs_icu %*% mat_icu
+
+w_icu
 
 ```
 
@@ -566,75 +510,61 @@ perf_svm
 ```{r}
 # Training the model on training data
 levels(trainData_icu$ICU) <- c("No", "Yes")
-model_rf = train(ICU ~ ., data=trainData_icu, method='rf', tuneLength= 10, trControl = fitControl)
+model_rf_icu = train(ICU ~ ., data=trainData_icu, method='rf', tuneLength= 10, trControl = fitControl)
 #model_rf
 
 # Testing it on test data
 
-varimp_rf <- varImp(model_rf)
+varimp_rf_icu <- varImp(model_rf)
 
-varimp_rf
+varimp_rf_icu
 
 #plot(varimp_rf, main="Variable Importance with Random Forest")
 
 levels(testData_icu$ICU) <- c("No", "Yes")
 
-predicted = predict(model_rf,testData_icu[,c(1:47)])
+predicted = predict(model_rf_icu,testData_icu[,c(1:47)])
 
-perf_rf = confusionMatrix(reference = testData_icu$ICU, data = predicted, mode='everything')
+perf_rf_icu = confusionMatrix(reference = testData_icu$ICU, data = predicted, mode='everything')
 
-perf_rf
+perf_rf_icu
+
+roc_icu_rf = roc(as.integer(testData_icu$ICU),as.integer(predicted))
+
+plot(roc_icu_rf)
+
+auc_icu_rf = auc(roc_icu_rf)
+auc_icu_rf
+
+# auc = 0.5496
 
 ```
- No  2678   42
-       Yes    4    8
-                                          
-               Accuracy : 0.9832          
-                 95% CI : (0.9776, 0.9876)
-    No Information Rate : 0.9817          
-    P-Value [Acc > NIR] : 0.3148          
-                                          
-                  Kappa : 0.2528          
-                                          
- Mcnemar's Test P-Value : 4.888e-08       
-                                          
-            Sensitivity : 0.9985          
-            Specificity : 0.1600          
-         Pos Pred Value : 0.9846          
-         Neg Pred Value : 0.6667          
-              Precision : 0.9846          
-                 Recall : 0.9985          
-                     F1 : 0.9915          
-             Prevalence : 0.9817          
-         Detection Rate : 0.9802          
-   Detection Prevalence : 0.9956          
-      Balanced Accuracy : 0.5793          
-                                          
-       'Positive' Class : No   
+
 
 ### XG Boost Dart 
 
 ```{r}
 # Training the model on training data
-# levels(trainData_icu$ICU) <- c("No", "Yes")
-# model_xgbdart = train(ICU ~ ., data=trainData_icu, method='xgbDART', tuneLength= 5, trControl = fitControl)
-# #model_xgbdart
-# 
-# # Testing it on test data
-# 
-# varimp_xgbdart <- varImp(model_xgbdart)
-# 
-# varimp_xgbdart
-# 
-# #plot(varimp_xgbdart, main="Variable Importance with XG Boost")
-# 
-# levels(testData_icu$ICU) <- c("No", "Yes")
-# 
-# predicted = predict(model_xgbdart,testData_icu[,c(1:47)])
-# 
-# perf_xgbdart = confusionMatrix(reference = testData_icu$ICU, data = predicted, mode='everything')
-# 
-# perf_xgbdart
+levels(trainData_icu$ICU) <- c("No", "Yes")
+model_xgbdart = train(ICU ~ ., data=trainData_icu, method='xgbDART', tuneLength= 5, trControl = fitControl)
+#model_xgbdart
+
+# Testing it on test data
+
+varimp_xgbdart <- varImp(model_xgbdart)
+
+varimp_xgbdart
+
+#plot(varimp_xgbdart, main="Variable Importance with XG Boost")
+
+levels(testData_icu$ICU) <- c("No", "Yes")
+
+predicted = predict(model_xgbdart,testData_icu[,c(1:47)])
+
+perf_xgbdart = confusionMatrix(reference = testData_icu$ICU, data = predicted, mode='everything')
+
+perf_xgbdart
+
 
 ```
 
@@ -686,7 +616,7 @@ str(testData_vent)
 ```
 
 
-
+### Log Reg
 
 ```{r}
 library(glmnet)
@@ -720,215 +650,161 @@ my_glmnet$grid <- function (x, y, len = NULL, search = "grid") {
 }
 
 
-#levels(trainData_hosp$Hosp) <- c("Yes", "No")
+levels(trainData_vent$Ventilator) <- c("No","Yes")
 
 # Train the model using randomForest and predict on the training data itself.
-model_logistic = train(Ventilator ~ ., data=trainData_vent, method= my_glmnet)
+model_logistic_vent = train(Ventilator ~ ., data=trainData_vent, method= my_glmnet, trControl = fitControl )
 
-plot(model_logistic, main="Model Accuracies with LR")
+#plot(model_logistic_vent, main="Model Accuracies with LR")
 
-varimp_lr <- varImp(model_logistic)
+varimp_lr_vent <- varImp(model_logistic_vent)
 
-varimp_lr
+varimp_lr_vent
 
 #plot(varimp_lr, main="Variable Importance with LR")
 
-#levels(testData_hosp$Hosp) <- c("Yes", "No")
+levels(testData_vent$Ventilator) <- c("No","Yes")
 
-predicted = predict(model_logistic,testData_vent[,c(1:47)])
+predicted = predict(model_logistic_vent,testData_vent[,c(1:47)])
 
-perf_lr = confusionMatrix(reference = testData_vent$Ventilator, data = predicted, mode='everything')
+perf_lr_vent = confusionMatrix(reference = testData_vent$Ventilator, data = predicted, mode='everything')
 
-perf_lr
+perf_lr_vent
 
 
-#roc_hosp_lr = roc(as.integer(testData_hosp$Hosp),as.integer(predicted))
+roc_vent_lr = roc(as.integer(testData_vent$Ventilator),as.integer(predicted))
 #plot(roc_hosp_lr)
 
-#auc_hosp_lr = auc(roc_hosp_lr)
-#auc_hosp_lr
+auc_vent_lr = auc(roc_vent_lr)
+auc_vent_lr
+
+# auc = 0.6805
+
+
+
+coef(model_logistic_vent$finalModel,model_logistic_vent$bestTune$lambda)
+
 
 ```
 
- 0 2703   14
-         1    7    8
-                                          
-               Accuracy : 0.9923          
-                 95% CI : (0.9883, 0.9952)
-    No Information Rate : 0.9919          
-    P-Value [Acc > NIR] : 0.4713          
-                                          
-                  Kappa : 0.4287          
-                                          
- Mcnemar's Test P-Value : 0.1904          
-                                          
-            Sensitivity : 0.9974          
-            Specificity : 0.3636          
-         Pos Pred Value : 0.9948          
-         Neg Pred Value : 0.5333          
-              Precision : 0.9948          
-                 Recall : 0.9974          
-                     F1 : 0.9961          
-             Prevalence : 0.9919          
-         Detection Rate : 0.9894          
-   Detection Prevalence : 0.9945          
-      Balanced Accuracy : 0.6805          
-                                          
-       'Positive' Class : 0   
-
-# FIT CONTROL
-
-```{r}
-fitControl <- trainControl(
-    method = 'cv',                   # k-fold cross validation
-    number = 5,                      # number of folds
-    savePredictions = 'final',       # saves predictions for optimal tuning parameter
-    classProbs = T,                  # should class probabilities be returned
-    summaryFunction=twoClassSummary  # results summary function
-) 
-```
 
 #### SVM 
 
 ```{r}
 
+set.seed(100)
+
 # Training the model on training data
 levels(trainData_vent$Ventilator) <- c("No", "Yes")
-model_svmRadial = train(Ventilator ~ ., data=trainData_vent, method='svmRadial', tuneLength=15, trControl = fitControl)
+model_svm_vent =train(Ventilator ~ .,
+    data = trainData_vent,
+    method = "svmRadial",
+    preProc = NULL,
+    trControl = fitControl)
+
 #model_svmRadial
 
 # Testing it on test data
 
-varimp_svm <- varImp(model_svmRadial)
+varimp_svm_vent <- varImp(model_svm_vent)
 
-varimp_svm
+varimp_svm_vent
 
 #plot(varimp_svm, main="Variable Importance with SVM")
 
 levels(testData_vent$Ventilator) <- c("No", "Yes")
 
-predicted = predict(model_svmRadial,testData_vent[,c(1:47)])
+predicted = predict(model_svm_vent,testData_vent[,c(1:47)])
 
-perf_svm = confusionMatrix(reference = testData_vent$Ventilator, data = predicted, mode='everything')
+perf_svm_vent = confusionMatrix(reference = testData_vent$Ventilator, data = predicted, mode='everything')
 
-perf_svm
+perf_svm_vent
 
+
+roc_vent_svm = roc(as.integer(testData_vent$Ventilator),as.integer(predicted))
+#plot(roc_hosp_lr)
+
+auc_vent_svm = auc(roc_vent_svm)
+auc_vent_svm
+
+
+
+
+# auc = 0.6354
+
+
+coefs_vent <- model_svm_vent$finalModel@coef[[1]]
+mat_vent <- model_svm_vent$finalModel@xmatrix[[1]]
+
+w_vent <- coefs_vent %*% mat_vent
+
+w_vent
 
 
 ```
-No  2704   17
-       Yes    6    5
-                                          
-               Accuracy : 0.9916          
-                 95% CI : (0.9874, 0.9947)
-    No Information Rate : 0.9919          
-    P-Value [Acc > NIR] : 0.63775         
-                                          
-                  Kappa : 0.2993          
-                                          
- Mcnemar's Test P-Value : 0.03706         
-                                          
-            Sensitivity : 0.9978          
-            Specificity : 0.2273          
-         Pos Pred Value : 0.9938          
-         Neg Pred Value : 0.4545          
-              Precision : 0.9938          
-                 Recall : 0.9978          
-                     F1 : 0.9958          
-             Prevalence : 0.9919          
-         Detection Rate : 0.9898          
-   Detection Prevalence : 0.9960          
-      Balanced Accuracy : 0.6125          
-                                          
-       'Positive' Class : No     
 
 
 #### Random Forest
 
 
 ```{r}
+set.seed(100)
+
 # Training the model on training data
 levels(trainData_vent$Ventilator) <- c("No", "Yes")
-model_rf = train(Ventilator ~ ., data=trainData_vent, method='rf', tuneLength= 10, trControl = fitControl)
+model_rf_vent = train(Ventilator ~ ., data=trainData_vent, method='rf', tuneLength= 10, trControl = fitControl)
 #model_rf
 
 # Testing it on test data
 
-varimp_rf <- varImp(model_rf)
+varimp_rf_vent <- varImp(model_rf_vent)
 
-varimp_rf
+varimp_rf_vent
 
 #plot(varimp_rf, main="Variable Importance with Random Forest")
 
 levels(testData_vent$Ventilator) <- c("No", "Yes")
 
-predicted = predict(model_rf,testData_vent[,c(1:47)])
+predicted = predict(model_rf_vent,testData_vent[,c(1:47)])
 
-perf_rf = confusionMatrix(reference = testData_vent$Ventilator, data = predicted, mode='everything')
+perf_rf_vent = confusionMatrix(reference = testData_vent$Ventilator, data = predicted, mode='everything')
 
-perf_rf
+perf_rf_vent
+
+roc_vent_rf = roc(as.integer(testData_vent$Ventilator),as.integer(predicted))
+#plot(roc_hosp_lr)
+
+auc_vent_rf = auc(roc_vent_rf)
+auc_vent_rf
+
+# auc = 0.5
 
 ```
-
-The metric "Accuracy" was not in the result set. ROC will be used instead.rf variable importance
-
-  only 20 most important variables shown (out of 47)
-
-Confusion Matrix and Statistics
-
-          Reference
-Prediction   No  Yes
-       No  2710   22
-       Yes    0    0
-                                          
-               Accuracy : 0.9919          
-                 95% CI : (0.9878, 0.9949)
-    No Information Rate : 0.9919          
-    P-Value [Acc > NIR] : 0.5564          
-                                          
-                  Kappa : 0               
-                                          
- Mcnemar's Test P-Value : 7.562e-06       
-                                          
-            Sensitivity : 1.0000          
-            Specificity : 0.0000          
-         Pos Pred Value : 0.9919          
-         Neg Pred Value :    NaN          
-              Precision : 0.9919          
-                 Recall : 1.0000          
-                     F1 : 0.9960          
-             Prevalence : 0.9919          
-         Detection Rate : 0.9919          
-   Detection Prevalence : 1.0000          
-      Balanced Accuracy : 0.5000          
-                                          
-       'Positive' Class : No  
 
 
 ### XG Boost Dart 
 
 ```{r}
 # Training the model on training data
-# levels(trainData_vent$Ventilator) <- c("No", "Yes")
-# model_xgbdart = train(Ventilator ~ ., data=trainData_vent, method='xgbDART', tuneLength= 5, trControl = fitControl)
-# #model_xgbdart
-# 
-# # Testing it on test data
-# 
-# varimp_xgbdart <- varImp(model_xgbdart)
-# 
-# 
-# varimp_xgbdart
-# 
-# #plot(varimp_xgbdart, main="Variable Importance with XG Boost")
-# 
-# levels(testData_vent$Ventilator) <- c("No", "Yes")
-# 
-# predicted = predict(model_xgbdart,testData_vent[,c(1:47)])
-# 
-# perf_xgbdart = confusionMatrix(reference = testData_vent$Ventilator, data = predicted, mode='everything')
-# 
-# perf_xgbdart
+levels(trainData_vent$Ventilator) <- c("No", "Yes")
+model_xgbdart = train(Ventilator ~ ., data=trainData_vent, method='xgbDART', tuneLength= 5, trControl = fitControl)
+#model_xgbdart
+
+# Testing it on test data
+
+varimp_xgbdart <- varImp(model_xgbdart)
+
+varimp_xgbdart
+
+#plot(varimp_xgbdart, main="Variable Importance with XG Boost")
+
+levels(testData_vent$Ventilator) <- c("No", "Yes")
+
+predicted = predict(model_xgbdart,testData_vent[,c(1:47)])
+
+perf_xgbdart = confusionMatrix(reference = testData_vent$Ventilator, data = predicted, mode='everything')
+
+perf_xgbdart
 
 
 ```
@@ -978,10 +854,7 @@ str(testData_vent2)
 
 ```
 
-
-# Logistic Reg
-
-#### ERROR Error in eval(predvars, data, env) : object 'age_group.80..Years' not found
+### Log Reg
 
 ```{r}
 library(glmnet)
@@ -1015,134 +888,167 @@ my_glmnet$grid <- function (x, y, len = NULL, search = "grid") {
 }
 
 
-#levels(trainData_hosp$Hosp) <- c("Yes", "No")
+levels(trainData_vent2$Ventilator) <- c("No","Yes")
 
 # Train the model using randomForest and predict on the training data itself.
-model_logistic = train(Ventilator ~ ., data=trainData_vent2, method= my_glmnet)
+model_logistic_vent2 = train(Ventilator ~ ., data=trainData_vent2, method= my_glmnet, trControl = fitControl )
 
-plot(model_logistic, main="Model Accuracies with LR")
+#plot(model_logistic_vent, main="Model Accuracies with LR")
 
-varimp_lr <- varImp(model_logistic)
+varimp_lr_vent2 <- varImp(model_logistic_vent2)
 
-varimp_lr
+varimp_lr_vent2
 
 #plot(varimp_lr, main="Variable Importance with LR")
 
-#levels(testData_hosp$Hosp) <- c("Yes", "No")
+levels(testData_vent2$Ventilator) <- c("No","Yes")
 
-predicted = predict(model_logistic,testData_vent2[,c(1:48)])
+predicted = predict(model_logistic_vent2,testData_vent2[,c(1:49)])
 
-perf_lr = confusionMatrix(reference = testData_vent2$Ventilator, data = predicted, mode='everything')
+perf_lr_vent2 = confusionMatrix(reference = testData_vent2$Ventilator, data = predicted, mode='everything')
 
-perf_lr
+perf_lr_vent2
 
 
-#roc_hosp_lr = roc(as.integer(testData_hosp$Hosp),as.integer(predicted))
+roc_vent2_lr = roc(as.integer(testData_vent2$Ventilator),as.integer(predicted))
 #plot(roc_hosp_lr)
 
-#auc_hosp_lr = auc(roc_hosp_lr)
-#auc_hosp_lr
+auc_vent2_lr = auc(roc_vent2_lr)
+auc_vent2_lr
+
+# auc = 0.7
+
+
+
+coef(model_logistic_vent2$finalModel,model_logistic_vent2$bestTune$lambda)
+
 
 ```
 
-# FIT CONTROL
-
-```{r}
-fitControl <- trainControl(
-    method = 'cv',                   # k-fold cross validation
-    number = 5,                      # number of folds
-    savePredictions = 'final',       # saves predictions for optimal tuning parameter
-    classProbs = T,                  # should class probabilities be returned
-    summaryFunction=twoClassSummary  # results summary function
-) 
-```
 
 #### SVM 
 
-#ERROR age_group...80 not found
-
 ```{r}
 
+set.seed(100)
+
 # Training the model on training data
-levels(trainData_vent2$Ventilator) <- c("No", "Yes")
-model_svmRadial = train(Ventilator ~ ., data=trainData_vent2, method='svmRadial', tuneLength=15, trControl = fitControl)
+levels(trainData_vent$Ventilator) <- c("No", "Yes")
+model_svm_vent2 =train(Ventilator ~ .,
+    data = trainData_vent2,
+    method = "svmRadial",
+    preProc = NULL,
+    trControl = fitControl)
+
 #model_svmRadial
 
 # Testing it on test data
 
-varimp_svm <- varImp(model_svmRadial)
+varimp_svm_vent2 <- varImp(model_svm_vent2)
 
-varimp_svm
+varimp_svm_vent2
 
 #plot(varimp_svm, main="Variable Importance with SVM")
 
 levels(testData_vent2$Ventilator) <- c("No", "Yes")
 
-predicted = predict(model_svmRadial,testData_vent2[,c(1:48)])
+predicted = predict(model_svm_vent2,testData_vent2[,c(1:49)])
 
-perf_svm = confusionMatrix(reference = testData_vent2$Ventilator, data = predicted, mode='everything')
+perf_svm_vent2 = confusionMatrix(reference = testData_vent2$Ventilator, data = predicted, mode='everything')
 
-perf_svm
+perf_svm_vent2
 
+
+roc_vent2_svm = roc(as.integer(testData_vent2$Ventilator),as.integer(predicted))
+#plot(roc_hosp_lr)
+
+auc_vent2_svm = auc(roc_vent2_svm)
+auc_vent2_svm
+
+
+
+
+# auc = 0.7034
+
+
+coefs_vent2 <- model_svm_vent2$finalModel@coef[[1]]
+mat_vent2 <- model_svm_vent2$finalModel@xmatrix[[1]]
+
+w_vent2 <- coefs_vent2 %*% mat_vent2
+
+w_vent2
 
 
 ```
 
 
 #### Random Forest
-#ERROR
+
 
 ```{r}
+set.seed(100)
+
 # Training the model on training data
 levels(trainData_vent2$Ventilator) <- c("No", "Yes")
-model_rf = train(Ventilator ~ ., data=trainData_vent2, method='rf', tuneLength= 10, trControl = fitControl)
+model_rf_vent2 = train(Ventilator ~ ., data=trainData_vent2, method='rf', tuneLength= 10, trControl = fitControl)
 #model_rf
 
 # Testing it on test data
 
-varimp_rf <- varImp(model_rf)
+varimp_rf_vent2 <- varImp(model_rf_vent2)
 
-varimp_rf
+varimp_rf_vent2
 
 #plot(varimp_rf, main="Variable Importance with Random Forest")
 
 levels(testData_vent2$Ventilator) <- c("No", "Yes")
 
-predicted = predict(model_rf,testData_vent2[,c(1:48)])
+predicted = predict(model_rf_vent2,testData_vent2[,c(1:49)])
 
-perf_rf = confusionMatrix(reference = testData_vent2$Ventilator, data = predicted, mode='everything')
+perf_rf_vent2 = confusionMatrix(reference = testData_vent2$Ventilator, data = predicted, mode='everything')
 
-perf_rf
+perf_rf_vent2
+
+roc_vent2_rf = roc(as.integer(testData_vent2$Ventilator),as.integer(predicted))
+#plot(roc_hosp_lr)
+
+auc_vent2_rf = auc(roc_vent2_rf)
+auc_vent2_rf
+
+# auc = 0.726
 
 ```
+
+
 
 
 ### XG Boost Dart 
 
 ```{r}
 # Training the model on training data
-# levels(trainData_vent2$Ventilator) <- c("No", "Yes")
-# model_xgbdart = train(Ventilator ~ ., data=trainData_vent2, method='xgbDART', tuneLength= 5, trControl = fitControl)
-# #model_xgbdart
-# 
-# # Testing it on test data
-# 
-# varimp_xgbdart <- varImp(model_xgbdart)
-# 
-# varimp_xgbdart
-# 
-# #plot(varimp_xgbdart, main="Variable Importance with XG Boost")
-# 
-# levels(testData_vent2$Ventilator) <- c("No", "Yes")
-# 
-# predicted = predict(model_xgbdart,testData_vent2[,c(1:48)])
-# 
-# perf_xgbdart = confusionMatrix(reference = testData_vent2$Ventilator, data = predicted, mode='everything')
-# 
-# perf_xgbdart
+levels(trainData_vent2$Ventilator) <- c("No", "Yes")
+model_xgbdart = train(Ventilator ~ ., data=trainData_vent2, method='xgbDART', tuneLength= 5, trControl = fitControl)
+#model_xgbdart
+
+# Testing it on test data
+
+varimp_xgbdart <- varImp(model_xgbdart)
+
+varimp_xgbdart
+
+#plot(varimp_xgbdart, main="Variable Importance with XG Boost")
+
+levels(testData_vent2$Ventilator) <- c("No", "Yes")
+
+predicted = predict(model_xgbdart,testData_vent2[,c(1:48)])
+
+perf_xgbdart = confusionMatrix(reference = testData_vent2$Ventilator, data = predicted, mode='everything')
+
+perf_xgbdart
 
 
 ```
+
 
 ### Mortality (With only symptoms)
 
@@ -1227,71 +1133,42 @@ my_glmnet$grid <- function (x, y, len = NULL, search = "grid") {
 }
 
 
-#levels(trainData_hosp$Hosp) <- c("Yes", "No")
+levels(trainData_mort$Mortality) <- c("No", "Yes")
 
 # Train the model using randomForest and predict on the training data itself.
-model_logistic = train(Mortality ~ ., data=trainData_mort, method= my_glmnet)
+model_logistic_mort = train(Mortality ~ ., data=trainData_mort, method= my_glmnet,trControl = fitControl)
 
-plot(model_logistic, main="Model Accuracies with LR")
+#plot(model_logistic, main="Model Accuracies with LR")
 
-varimp_lr <- varImp(model_logistic)
+varimp_lr_mort <- varImp(model_logistic_mort)
 
-varimp_lr
+varimp_lr_mort
 
 #plot(varimp_lr, main="Variable Importance with LR")
 
-#levels(testData_hosp$Hosp) <- c("Yes", "No")
+levels(testData_mort$Mortality) <- c("No", "Yes")
 
-predicted = predict(model_logistic,testData_mort[,c(1:47)])
+predicted = predict(model_logistic_mort,testData_mort[,c(1:47)])
 
-perf_lr = confusionMatrix(reference = testData_mort$Mortality, data = predicted, mode='everything')
+perf_lr_mort = confusionMatrix(reference = testData_mort$Mortality, data = predicted, mode='everything')
 
-perf_lr
+perf_lr_mort
 
-
-#roc_hosp_lr = roc(as.integer(testData_hosp$Hosp),as.integer(predicted))
+roc_mort_lr = roc(as.integer(testData_mort$Mortality),as.integer(predicted))
 #plot(roc_hosp_lr)
 
-#auc_hosp_lr = auc(roc_hosp_lr)
-#auc_hosp_lr
+auc_mort_lr = auc(roc_mort_lr)
+auc_mort_lr
 
-```
-0 2686   29
-         1    7   10
-                                          
-               Accuracy : 0.9868          
-                 95% CI : (0.9818, 0.9908)
-    No Information Rate : 0.9857          
-    P-Value [Acc > NIR] : 0.3515733       
-                                          
-                  Kappa : 0.3515          
-                                          
- Mcnemar's Test P-Value : 0.0004653       
-                                          
-            Sensitivity : 0.9974          
-            Specificity : 0.2564          
-         Pos Pred Value : 0.9893          
-         Neg Pred Value : 0.5882          
-              Precision : 0.9893          
-                 Recall : 0.9974          
-                     F1 : 0.9933          
-             Prevalence : 0.9857          
-         Detection Rate : 0.9832          
-   Detection Prevalence : 0.9938          
-      Balanced Accuracy : 0.6269          
-                                          
-       'Positive' Class : 0   
+# auc = 0.6395
 
-# FIT CONTROL
 
-```{r}
-fitControl <- trainControl(
-    method = 'cv',                   # k-fold cross validation
-    number = 5,                      # number of folds
-    savePredictions = 'final',       # saves predictions for optimal tuning parameter
-    classProbs = T,                  # should class probabilities be returned
-    summaryFunction=twoClassSummary  # results summary function
-) 
+
+coef(model_logistic_mort$finalModel,model_logistic_mort$bestTune$lambda)
+
+
+
+
 ```
 
 #### SVM 
@@ -1300,53 +1177,49 @@ fitControl <- trainControl(
 
 # Training the model on training data
 levels(trainData_mort$Mortality) <- c("No", "Yes")
-model_svmRadial = train(Mortality ~ ., data=trainData_mort, method='svmRadial', tuneLength=15, trControl = fitControl)
+model_svm_mort =train(Mortality ~ .,
+    data = trainData_mort,
+    method = "svmRadial",
+    preProc = NULL,
+    trControl = fitControl)
 #model_svmRadial
 
 # Testing it on test data
 
-varimp_svm <- varImp(model_svmRadial)
+varimp_svm_mort <- varImp(model_svm_mort)
 
-varimp_svm
+varimp_svm_mort
 
 #plot(varimp_svm, main="Variable Importance with SVM")
 
 levels(testData_mort$Mortality) <- c("No", "Yes")
 
-predicted = predict(model_svmRadial,testData_mort[,c(1:47)])
+predicted = predict(model_svm_mort,testData_mort[,c(1:47)])
 
-perf_svm = confusionMatrix(reference = testData_mort$Mortality, data = predicted, mode='everything')
+perf_svm_mort = confusionMatrix(reference = testData_mort$Mortality, data = predicted, mode='everything')
 
-perf_svm
+perf_svm_mort
+
+
+roc_mort_svm = roc(as.integer(testData_mort$Mortality),as.integer(predicted))
+#plot(roc_hosp_lr)
+
+auc_mort_svm = auc(roc_mort_svm)
+auc_mort_svm
+
+# auc = 0.5637
+
+
+coefs_mort <- model_svm_mort$finalModel@coef[[1]]
+mat_mort <- model_svm_mort$finalModel@xmatrix[[1]]
+
+w_mort <- coefs_mort %*% mat_mort
+
+w_mort
 
 
 
 ```
-No  2683   33
-       Yes   10    6
-                                          
-               Accuracy : 0.9843          
-                 95% CI : (0.9789, 0.9886)
-    No Information Rate : 0.9857          
-    P-Value [Acc > NIR] : 0.7698444       
-                                          
-                  Kappa : 0.2116          
-                                          
- Mcnemar's Test P-Value : 0.0007937       
-                                          
-            Sensitivity : 0.9963          
-            Specificity : 0.1538          
-         Pos Pred Value : 0.9878          
-         Neg Pred Value : 0.3750          
-              Precision : 0.9878          
-                 Recall : 0.9963          
-                     F1 : 0.9921          
-             Prevalence : 0.9857          
-         Detection Rate : 0.9821          
-   Detection Prevalence : 0.9941          
-      Balanced Accuracy : 0.5751          
-                                          
-       'Positive' Class : No   
 
 
 #### Random Forest
@@ -1355,80 +1228,64 @@ No  2683   33
 ```{r}
 # Training the model on training data
 levels(trainData_mort$Mortality) <- c("No", "Yes")
-model_rf = train(Mortality ~ ., data=trainData_mort, method='rf', tuneLength= 10, trControl = fitControl)
+model_rf_mort = train(Mortality ~ ., data=trainData_mort, method='rf', tuneLength= 10, trControl = fitControl)
 #model_rf
 
 # Testing it on test data
 
-varimp_rf <- varImp(model_rf)
+varimp_rf_mort <- varImp(model_rf_mort)
 
-varimp_rf
+varimp_rf_mort
 
 #plot(varimp_rf, main="Variable Importance with Random Forest")
 
 levels(testData_mort$Mortality) <- c("No", "Yes")
 
-predicted = predict(model_rf,testData_mort[,c(1:47)])
+predicted = predict(model_rf_mort,testData_mort[,c(1:47)])
 
-perf_rf = confusionMatrix(reference = testData_mort$Mortality, data = predicted, mode='everything')
+perf_rf_mort = confusionMatrix(reference = testData_mort$Mortality, data = predicted, mode='everything')
 
-perf_rf
+perf_rf_mort
+
+roc_mort_rf = roc(as.integer(testData_mort$Mortality),as.integer(predicted))
+#plot(roc_hosp_lr)
+
+auc_mort_rf = auc(roc_mort_rf)
+auc_mort_rf
+
+# auc = 0.6128
+
 
 ```
-
-No  2674   29
-       Yes   19   10
-                                         
-               Accuracy : 0.9824         
-                 95% CI : (0.9768, 0.987)
-    No Information Rate : 0.9857         
-    P-Value [Acc > NIR] : 0.9334         
-                                         
-                  Kappa : 0.2854         
-                                         
- Mcnemar's Test P-Value : 0.1939         
-                                         
-            Sensitivity : 0.9929         
-            Specificity : 0.2564         
-         Pos Pred Value : 0.9893         
-         Neg Pred Value : 0.3448         
-              Precision : 0.9893         
-                 Recall : 0.9929         
-                     F1 : 0.9911         
-             Prevalence : 0.9857         
-         Detection Rate : 0.9788         
-   Detection Prevalence : 0.9894         
-      Balanced Accuracy : 0.6247         
-                                         
-       'Positive' Class : No  
 
 
 ### XG Boost Dart 
 
 ```{r}
 # Training the model on training data
-# levels(trainData_mort$Mortality) <- c("No", "Yes")
-# model_xgbdart = train(Mortality ~ ., data=trainData_mort, method='xgbDART', tuneLength= 5, trControl = fitControl)
-# #model_xgbdart
-# 
-# # Testing it on test data
-# 
-# varimp_xgbdart <- varImp(model_xgbdart)
-# 
-# varimp_xgbdart
-# 
-# #plot(varimp_xgbdart, main="Variable Importance with XG Boost")
-# 
-# levels(testData_mort$Mortality) <- c("No", "Yes")
-# 
-# predicted = predict(model_xgbdart,testData_mort[,c(1:47)])
-# 
-# perf_xgbdart = confusionMatrix(reference = testData_mort$Mortality, data = predicted, mode='everything')
-# 
-# perf_xgbdart
+levels(trainData_mort$Mortality) <- c("No", "Yes")
+model_xgbdart = train(Mortality ~ ., data=trainData_mort, method='xgbDART', tuneLength= 5, trControl = fitControl)
+#model_xgbdart
+
+# Testing it on test data
+
+varimp_xgbdart <- varImp(model_xgbdart)
+
+varimp_xgbdart
+
+#plot(varimp_xgbdart, main="Variable Importance with XG Boost")
+
+levels(testData_mort$Mortality) <- c("No", "Yes")
+
+predicted = predict(model_xgbdart,testData_mort[,c(1:47)])
+
+perf_xgbdart = confusionMatrix(reference = testData_mort$Mortality, data = predicted, mode='everything')
+
+perf_xgbdart
 
 
 ```
+
 
 ### Mortality (With symptoms, hospitalization, ICU and ventilator)
 
@@ -1476,9 +1333,7 @@ str(testData_mort2)
 ```
 
 
-
 # Logistic Reg
-# Error in eval(predvars, data, env) : object 'age_group.60...69.Years' not found
 
 ```{r}
 library(glmnet)
@@ -1512,73 +1367,90 @@ my_glmnet$grid <- function (x, y, len = NULL, search = "grid") {
 }
 
 
-#levels(trainData_hosp$Hosp) <- c("Yes", "No")
+levels(trainData_mort2$Mortality) <- c("No", "Yes")
 
 # Train the model using randomForest and predict on the training data itself.
-model_logistic = train(Mortality ~ ., data=trainData_mort2, method= my_glmnet)
+model_logistic_mort2 = train(Mortality ~ ., data=trainData_mort2, method= my_glmnet,trControl = fitControl)
 
-plot(model_logistic, main="Model Accuracies with LR")
+#plot(model_logistic, main="Model Accuracies with LR")
 
-varimp_lr <- varImp(model_logistic)
+varimp_lr_mort2 <- varImp(model_logistic_mort2)
 
-varimp_lr
+varimp_lr_mort2
 
 #plot(varimp_lr, main="Variable Importance with LR")
 
-#levels(testData_hosp$Hosp) <- c("Yes", "No")
+levels(testData_mort2$Mortality) <- c("No", "Yes")
 
-predicted = predict(model_logistic,testData_mort2[,c(1:50)])
+predicted = predict(model_logistic_mort2,testData_mort2[,c(1:53)])
 
-perf_lr = confusionMatrix(reference = testData_mort2$Mortality, data = predicted, mode='everything')
+perf_lr_mort2 = confusionMatrix(reference = testData_mort2$Mortality, data = predicted, mode='everything')
 
-perf_lr
+perf_lr_mort2
 
-
-#roc_hosp_lr = roc(as.integer(testData_hosp$Hosp),as.integer(predicted))
+roc_mort2_lr = roc(as.integer(testData_mort2$Mortality),as.integer(predicted))
 #plot(roc_hosp_lr)
 
-#auc_hosp_lr = auc(roc_hosp_lr)
-#auc_hosp_lr
+auc_mort2_lr = auc(roc_mort2_lr)
+auc_mort2_lr
 
-```
+# auc = 0.6654
 
-# FIT CONTROL
 
-```{r}
-fitControl <- trainControl(
-    method = 'cv',                   # k-fold cross validation
-    number = 5,                      # number of folds
-    savePredictions = 'final',       # saves predictions for optimal tuning parameter
-    classProbs = T,                  # should class probabilities be returned
-    summaryFunction=twoClassSummary  # results summary function
-) 
+
+coef(model_logistic_mort2$finalModel,model_logistic_mort2$bestTune$lambda)
+
+
+
+
 ```
 
 #### SVM 
-#ERROR - age_group 60...69 not found
 
 ```{r}
+set.seed(100)
 
 # Training the model on training data
-levels(trainData_mort2$Mortality) <- c("No", "Yes")
-model_svmRadial = train(Mortality ~ ., data=trainData_mort2, method='svmRadial', tuneLength=15, trControl = fitControl)
+levels(trainData_mort$Mortality) <- c("No", "Yes")
+model_svm_mort2 =train(Mortality ~ .,
+    data = trainData_mort2,
+    method = "svmRadial",
+    preProc = NULL,
+    trControl = fitControl)
 #model_svmRadial
 
 # Testing it on test data
 
-varimp_svm <- varImp(model_svmRadial)
+varimp_svm_mort2 <- varImp(model_svm_mort2)
 
-varimp_svm
+varimp_svm_mort2
 
 #plot(varimp_svm, main="Variable Importance with SVM")
 
-levels(testData_mort2$Mortality) <- c("No", "Yes")
+levels(testData_mort$Mortality) <- c("No", "Yes")
 
-predicted = predict(model_svmRadial,testData_mort2[,c(1:50)])
+predicted = predict(model_svm_mort2,testData_mort2[,c(1:53)])
 
-perf_svm = confusionMatrix(reference = testData_mort2$Mortality, data = predicted, mode='everything')
+perf_svm_mort2 = confusionMatrix(reference = testData_mort2$Mortality, data = predicted, mode='everything')
 
-perf_svm
+perf_svm_mort2
+
+
+roc_mort2_svm = roc(as.integer(testData_mort2$Mortality),as.integer(predicted))
+#plot(roc_hosp_lr)
+
+auc_mort2_svm = auc(roc_mort2_svm)
+auc_mort2_svm
+
+# auc = 0.6145
+
+
+coefs_mort2 <- model_svm_mort2$finalModel@coef[[1]]
+mat_mort2 <- model_svm_mort2$finalModel@xmatrix[[1]]
+
+w_mort2 <- coefs_mort2 %*% mat_mort2
+
+w_mort2
 
 
 
@@ -1591,24 +1463,33 @@ perf_svm
 ```{r}
 # Training the model on training data
 levels(trainData_mort2$Mortality) <- c("No", "Yes")
-model_rf = train(Mortality ~ ., data=trainData_mort2, method='rf', tuneLength= 10, trControl = fitControl)
+model_rf_mort2 = train(Mortality ~ ., data=trainData_mort2, method='rf', tuneLength= 10, trControl = fitControl)
 #model_rf
 
 # Testing it on test data
 
-varimp_rf <- varImp(model_rf)
+varimp_rf_mort2 <- varImp(model_rf_mort2)
 
-varimp_rf
+varimp_rf_mort2
 
 #plot(varimp_rf, main="Variable Importance with Random Forest")
 
 levels(testData_mort2$Mortality) <- c("No", "Yes")
 
-predicted = predict(model_rf,testData_mort2[,c(1:50)])
+predicted = predict(model_rf_mort2,testData_mort2[,c(1:53)])
 
-perf_rf = confusionMatrix(reference = testData_mort2$Mortality, data = predicted, mode='everything')
+perf_rf_mort2 = confusionMatrix(reference = testData_mort2$Mortality, data = predicted, mode='everything')
 
-perf_rf
+perf_rf_mort2
+
+roc_mort2_rf = roc(as.integer(testData_mort2$Mortality),as.integer(predicted))
+#plot(roc_hosp_lr)
+
+auc_mort2_rf = auc(roc_mort2_rf)
+auc_mort2_rf
+
+# auc = 0.6525
+
 
 ```
 
@@ -1616,26 +1497,35 @@ perf_rf
 ### XG Boost Dart 
 
 ```{r}
-# # Training the model on training data
-# levels(trainData_mort2$Mortality) <- c("No", "Yes")
-# model_xgbdart = train(Mortality ~ ., data=trainData_mort2, method='xgbDART', tuneLength= 5, trControl = fitControl)
-# #model_xgbdart
-# 
-# # Testing it on test data
-# 
-# varimp_xgbdart <- varImp(model_xgbdart)
-# 
-# varimp_xgbdart
-# 
-# #plot(varimp_xgbdart, main="Variable Importance with XG Boost")
-# 
-# levels(testData_mort2$Mortality) <- c("No", "Yes")
-# 
-# predicted = predict(model_xgbdart,testData_mort2[,c(1:50)])
-# 
-# perf_xgbdart = confusionMatrix(reference = testData_mort2$Mortality, data = predicted, mode='everything')
-# 
-# perf_xgbdart
+# Training the model on training data
+levels(trainData_mort2$Mortality) <- c("No", "Yes")
+model_xgbdart = train(Mortality ~ ., data=trainData_mort2, method='xgbDART', tuneLength= 5, trControl = fitControl)
+#model_xgbdart
+
+# Testing it on test data
+
+varimp_xgbdart <- varImp(model_xgbdart)
+
+varimp_xgbdart
+
+#plot(varimp_xgbdart, main="Variable Importance with XG Boost")
+
+levels(testData_mort2$Mortality) <- c("No", "Yes")
+
+predicted = predict(model_xgbdart,testData_mort2[,c(1:50)])
+
+perf_xgbdart = confusionMatrix(reference = testData_mort2$Mortality, data = predicted, mode='everything')
+
+perf_xgbdart
+
+
+```
+
+
+```{r}
+save(model_rf_hosp, model_svm_icu, model_logistic_vent,model_rf_vent2,model_logistic_mort,model_logistic_mort2,file = "BestModels.RData")
+
+
 
 
 ```
