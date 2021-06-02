@@ -4,6 +4,7 @@ https://medium.com/@kfoofw/seasonal-lags-sarima-model-fa671a858729
 ```{r, message = FALSE}
 
 library(ggplot2)
+library(tidyquant)
 library(dplyr)
 library(data.table)
 library(corrplot)
@@ -16,19 +17,23 @@ library(TTR)
 library(xts)
 library(dygraphs)
 library(assertthat)
+library(sarima)
+library(astsa)
 ```
 
 # Import time series data
 ```{r}
 cdc_dec20_ts = read.csv('cdc_dec20_ts.csv') %>% 
   transmute(Date = as.Date(X2020.01.01),
-            Values = X2)
+            Values = X2) %>% 
+  mutate(Group = "Given")
 
 cdc_xts = xts(cdc_dec20_ts$Values, order.by = cdc_dec20_ts$Date)
 
 cdc_may21_ts = read.csv('cdc_may21_ts.csv') %>% 
   transmute(Date = as.Date(X2020.01.01),
-            Values = X15)
+            Values = X15) %>% 
+  mutate(Group = "Given")
 
 cdc_xts_may = xts(cdc_may21_ts$Values, order.by = cdc_may21_ts$Date)
 ```
@@ -130,55 +135,60 @@ The plots suggests, we use an autoregressive model with lag = 7. If ACF plot sho
 # ```
 
 ```{r}
-acf2(diff(diff(cdc_xts_may),7),12)
-sarima(cdc_xts_may, p = 0, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
-sarima(cdc_xts_may, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
-```
-```{r}
 acf2(diff(diff(cdc_xts),7),12)
 sarima(cdc_xts, p = 0, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
 sarima(cdc_xts, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
 ```
 
 ```{r}
-sarima.for(cdc_xts_may, 5, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7) 
+acf2(diff(diff(cdc_xts_may),7),12)
+sarima(cdc_xts_may, p = 0, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
+sarima(cdc_xts_may, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
+```
+
+
+
+```{r}
+days = 5
+sarima.may = sarima.for(cdc_xts_may, days, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7) 
+
+sarima.may_pred = sarima.may$pred %>% map(~max(0,.x)) %>% unlist()
+
+
+
+may_pred_df = data.frame(Date = seq(from = tail(cdc_may21_ts$Date,1)+1, by = 1, length.out = days),
+                         Values = sarima.may_pred,
+                         Group = "Forecasted")
+
+may_all = rbind(cdc_may21_ts, may_pred_df)
+
+ggplot(data = may_all, aes(x = Date, y = Values, color = Group, group = 1)) + geom_line() + coord_x_date(xlim = c("2021-03-01","2021-15-05"), ylim = (c(-10,5500))) + ggtitle("Time Series")
+```
+```{r}
+sarima.for(cdc_xts_may, days, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7) 
+```
+```{r}
+days = 31
+sarima.2020 = sarima.for(cdc_xts, days, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7) 
+
+sarima.2020= sarima.2020$pred %>% map(~max(0,.x)) %>% unlist()
+
+
+
+pred2020_df = data.frame(Date = seq(from = tail(cdc_dec20_ts$Date,1)+1, by = 1, length.out = days),
+                         Values = sarima.2020,
+                         Group = "Forecasted")
+
+twenty20_all = rbind(cdc_dec20_ts, pred2020_df)
+
+ggplot(data = twenty20_all, aes(x = Date, y = Values, color = Group, group = 1)) + geom_line() + coord_x_date(xlim = c("2020-01-01","2020-31-12"))
 ```
 
 ```{r}
-sarima.for(dc_xts, 5, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
-```
-
-
-
-
-# NOV 2020 plots
-```{r}
-ggplot(data.frame(residuals = xtsforecast_Nov_702$residuals), aes(residuals)) + 
-  geom_histogram(bins = 50, aes(y = ..density..), col = "red", fill = "red", alpha = 0.3) + geom_density()
+ggplot(data = may_all, aes(x = Date, y = Values, group = 1)) + geom_line() + coord_x_date(xlim = c("2020-01-01","2020-12-15"))
 ```
 
 ```{r}
-ggplot(data.frame(residuals = xtsforecast_Nov_732$residuals), aes(residuals)) + 
-  geom_histogram(bins = 50, aes(y = ..density..), col = "red", fill = "red", alpha = 0.3) + geom_density()
+sarima.for(cdc_xts, 5, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
 ```
 
-```{r}
-sum(xtsforecast_Nov_702$upper[,2])
-sum(xtsforecast_Nov_732$upper[,2])
-```
-
-# May 2021 plots
-```{r}
-ggplot(data.frame(residuals = xtsforecast_May_702$residuals), aes(residuals)) + 
-  geom_histogram(bins = 50, aes(y = ..density..), col = "red", fill = "red", alpha = 0.3) + geom_density()
-```
-
-```{r}
-ggplot(data.frame(residuals = xtsforecast_May_732$residuals), aes(residuals)) + 
-  geom_histogram(bins = 50, aes(y = ..density..), col = "red", fill = "red", alpha = 0.3) + geom_density()
-```
-
-```{r}
-sum(xtsforecast_May_702$upper[,2])
-sum(xtsforecast_May_732$upper[,2])
-```
