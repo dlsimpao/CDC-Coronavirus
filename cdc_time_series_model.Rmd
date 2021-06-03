@@ -10,18 +10,25 @@ library(dplyr)
 library(data.table)
 library(corrplot)
 library(gridExtra)
+#time series libraries
 library(forecast)
 library(tseries)
 library(TSA)
+library(sarima)
+library(astsa)
+
 library(tibble)
 library(TTR)
 library(xts)
 library(dygraphs)
+
+#save images
+library(htmlwidgets)
+library(webshot)
+
 library(assertthat)
 
 
-library(sarima)
-library(astsa)
 ```
 
 # Import time series data
@@ -60,7 +67,20 @@ dygraph(cdc_xts_may, xlab = "Time", ylab = "Cases", main = "Time Series")
 
 ```{r}
 ######################## Include in report
-dygraph(cdc_xts_allmay, xlab = "Time", ylab = "Cases", main = "Time Series")
+#https://github.com/rstudio/dygraphs/issues/71
+# save html to png
+
+allmay_tsplot = dygraph(cdc_xts_allmay, xlab = "Time", ylab = "Cases", main = "Partial Time Series of Positive COVID Cases")
+
+saveWidget(allmay_tsplot, "allmay_dygraph.html", selfcontained = FALSE)
+width<- 1080
+height <- 610
+webshot("allmay_dygraph.html", file = "allmay_dygraph.png",
+        cliprect = c(10,30,width+50,height+50)
+        ,vwidth = width, vheight = height )
+
+
+
 ```
 
 
@@ -80,6 +100,8 @@ adf.test(cdc_xts_may, alternative = "stationary", k = 0)
 ```
 
 ```{r}
+# INCLUDE THIS
+
 # test for stationarity
 # Augmented Dickey-Fuller test
 adf.test(cdc_xts_allmay, alternative = "stationary", k = 0)
@@ -94,6 +116,12 @@ plot.xts(cdc_xts_diff1, col = "dark green")
 cdc_xts_may_diff1 = diff(cdc_xts_may)
 plot.xts(cdc_xts_may_diff1, col = "dark green")
 ```
+```{r}
+png(file = "allmay_plotxts.png", width = 1080, height = 610)
+plot.xts(diff(cdc_xts_allmay), col = "dark green")
+dev.off()
+```
+
 
 ```{r}
 adf.test(na.omit(cdc_xts_diff1), alternative = "stationary", k = 0)
@@ -104,11 +132,18 @@ adf.test(na.omit(cdc_xts_may_diff1), alternative = "stationary", k = 0)
 ```
 
 ```{r}
+adf.test(diff(cdc_xts_allmay) %>% na.omit(), alternative = "stationary", k = 0)
+```
+
+```{r}
 findfrequency(cdc_xts)
 findfrequency(cdc_xts_diff1)
 
 findfrequency(cdc_xts_may)
 findfrequency(cdc_xts_may_diff1)
+
+findfrequency(cdc_xts_allmay)
+findfrequency(diff(cdc_xts_allmay))
 ```
 
 # ACF/PACF plot: Nov xts
@@ -139,6 +174,7 @@ acf2(cdc_xts_allmay)
 acf2(diff(cdc_xts_allmay))
 acf2(diff(cdc_xts_allmay),12)
 #We're using this one 
+
 cdc_allmay_acfObj = acf2(diff(diff(cdc_xts_allmay),7))
 ```
 
@@ -162,17 +198,26 @@ sarima(cdc_xts_may, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
 # Use this one
 ```{r}
 ####################### Include in report
+png(file = "allmay_acf2.png", width = 1080, height = 610)
 acf2(diff(cdc_xts_allmay))
+dev.off()
+png(file = "allmay_acf2_lag7.png", width = 1080, height = 610)
 acf2(diff(diff(cdc_xts_allmay),7))
-
+dev.off()
 #sarima(cdc_xts_allmay, p = 0, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
 
 ####################### Include in report
+png(file = "allmay_sarima.png", width = 1080, height = 610)
 sarima(cdc_xts_allmay, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
+dev.off()
 ```
 ```{r}
 days = 5
+
+#sarima forecast for 5 days with parameters (2, 1, 2) (2, 1, 2)_7
+png(file = "allmay_sarima_5days.png", width = 1080, height = 610)
 sarima.allmay = sarima.for(cdc_xts_allmay, days, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7) 
+dev.off()
 
 sarima.allmay_pred = sarima.may$pred %>% map(~ max(0,.x)) %>% unlist()
 
@@ -183,7 +228,9 @@ allmay_pred_df = data.frame(Date = seq(from = tail(cdc_may21_ts$Date,1)+1, by = 
 
 allmay_full = rbind(cdc_allmay.ts, allmay_pred_df)
 
-ggplot(data = allmay_full, aes(x = Date, y = Values, color = Group, group = 1)) + geom_line() + coord_x_date(xlim = c("2021-03-01","2021-15-05"), ylim = (c(-10,20000))) + ggtitle("Time Series")
+ggplot(data = allmay_full, aes(x = Date, y = Values, color = Group, group = 1)) + geom_line() + coord_x_date(xlim = c("2021-03-01","2021-15-05"), ylim = (c(-10,20000))) + ggtitle("Time Series 5 day forecast (adjusted for negative values)")
+
+ggsave("allmay_ggplot_5days.png")
 ```
 
 #Comparison with the ground truth, predicting the winter surge
@@ -202,7 +249,9 @@ acf2(diff(diff(apr_oct2020.xts),7))
 
 ```{r}
 days = 60
+png(file = "allmay_sarima_60days.png", width = 1080, height = 610)
 sarima.aproct = sarima.for(apr_oct2020.xts, days, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
+dev.off()
 
 aproct_pred_df = data.frame(Date = seq(from = tail(apr_oct2020$Date,1)+1, by = 1, length.out = days),
                          Values = sarima.aproct$pred,
@@ -215,7 +264,18 @@ aproct_predplot = ggplot(data = aproct_full, aes(x = Date, y = Values, color = G
 aproct_actplot = ggplot(data = cdc_allmay.ts, aes(x = Date, y = Values)) + geom_line() + coord_x_date(xlim = c("2020-01-01","2021-01-01"),ylim = (c(-10,80000))) + ggtitle("Time Series")
 
 aproct_predplot
+ggsave("allmay_ggplot_60days.png")
 aproct_actplot
+```
+
+```{r}
+actual_toforecast_may = cdc_allmay.ts %>% 
+  filter(Date > tail(apr_nov2020$Date) + 1) %>% 
+  filter(Date < tail(apr_nov2020$Date) + days)
+
+ggplot(data = aproct_full, aes(x = Date, y = Values, color = Group, group = 1)) + geom_line()+ geom_line(data = actual_toforecast_may, aes(x = Date, y = Values, color = Group, group = 1)) + coord_x_date(xlim = c("2020-01-01","2021-01-01"),ylim = (c(-10,80000))) + ggtitle("Time Series 60 day forecast (comparison to actual)")
+
+ggsave("allmay_ggplot_60days.png")
 ```
 
 
