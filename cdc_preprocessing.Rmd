@@ -1,4 +1,4 @@
-```{r}
+```{r, message = FALSE}
 library(tidyverse)
 library(fastDummies)
 
@@ -19,12 +19,15 @@ library(zoo)
 ```
 
 ```{r}
-cdc_dec20 = read.csv('COVID_Cases_Restricted_Detailed_12042020.csv')
+#cdc_dec20 = read.csv('COVID_Cases_Restricted_Detailed_12042020.csv')
 cdc_may21 = read.csv('COVID_Cases_Restricted_Detailed_05112021_Part_1.csv')
+cdc_may21_2 = read.csv('COVID_Cases_Restricted_Detailed_05112021_Part_2.csv')
+cdc_may21_3 = read.csv('COVID_Cases_Restricted_Detailed_05112021_Part_3.csv')
+cdc_may21_4 = read.csv('COVID_Cases_Restricted_Detailed_05112021_Part_4.csv')
 
-head(cdc_dec20,10)
-glimpse(cdc_dec20)
 ```
+
+
 
 ```{r}
 test = select(cdc_dec20, pos_spec_dt) %>% 
@@ -44,6 +47,7 @@ test
 ```
 
 # Data for March to Dec 2020
+#Not using
 ```{r}
 cdc_dec20_filtered = select(cdc_dec20, pos_spec_dt) %>% 
   filter(pos_spec_dt != '')
@@ -64,12 +68,13 @@ str(cdc_dec20_ts)
 write.zoo(cdc_dec20_ts, sep = ',', file = "cdc_dec20_ts.csv")
 ```
 
-# Data for May 2021
+# Data for May 2021 Part 1
 ```{r}
-cdc_may21_filtered = select(cdc_may21, pos_spec_dt) %>% 
-  filter(pos_spec_dt != '')
+cdc_may21_filtered = select(cdc_may21, pos_spec_dt, cdc_case_earliest_dt) %>% 
+  filter(pos_spec_dt != '') %>% 
+  filter(cdc_case_earliest_dt != "")
 
-cdc_may21_filtered = cdc_may21_filtered %>% 
+cdc_may21_pos = cdc_may21_filtered %>% 
   mutate(pos_spec_dt = as.Date(pos_spec_dt)) %>% 
   arrange(pos_spec_dt) %>% 
   group_by(pos_spec_dt) %>% 
@@ -77,15 +82,91 @@ cdc_may21_filtered = cdc_may21_filtered %>%
     n = n()
   )
 
-cdc_may21_ts = xts(as.numeric(cdc_may21_filtered$n), order.by = as.Date(cdc_may21_filtered$pos_spec_dt))
+cdc_may21_case = cdc_may21_filtered %>% 
+  mutate(cdc_case_earliest_dt = as.Date(cdc_case_earliest_dt)) %>% 
+  arrange(cdc_case_earliest_dt) %>% 
+  group_by(cdc_case_earliest_dt) %>% 
+  summarize(
+    n = n()
+  )
 
-str(cdc_may21_ts)
+cdc_may21_ts = xts(as.numeric(cdc_may21_pos$n), order.by = as.Date(cdc_may21_pos$pos_spec_dt))
+
+#cdc_may21_case_ts = xts(as.numeric(cdc_may21_case$n, order.by = as.Date(cdc_may21_case$cdc_case_earliest_dt)))
+
+
 #https://rstudio-pubs-static.s3.amazonaws.com/504487_1975b93a0ed04f33aab708cb536b8d0e.html
 
 write.zoo(cdc_may21_ts, sep = ',', file = "cdc_may21_ts.csv")
 ```
 
+# Data for May 2021 Part 2
+```{r}
+cdc_may21_filtered2 = select(cdc_may21_2, pos_spec_dt, cdc_case_earliest_dt) %>% 
+  filter(pos_spec_dt != '') %>% 
+  filter(cdc_case_earliest_dt != "")
 
+cdc_may21_pos2 = cdc_may21_filtered2 %>% 
+  mutate(pos_spec_dt = as.Date(pos_spec_dt)) %>% 
+  arrange(pos_spec_dt) %>% 
+  group_by(pos_spec_dt) %>% 
+  summarize(
+    n2 = n()
+  )
+
+cdc_may21_ts = xts(as.numeric(cdc_may21_filtered$n), order.by = as.Date(cdc_may21_filtered$pos_spec_dt))
+
+```
+
+# Data for May 2021 Part 3
+```{r}
+cdc_may21_filtered3 = select(cdc_may21_3, pos_spec_dt, cdc_case_earliest_dt) %>% 
+  filter(pos_spec_dt != '') %>% 
+  filter(cdc_case_earliest_dt != "")
+
+cdc_may21_pos3 = cdc_may21_filtered3 %>% 
+  mutate(pos_spec_dt = as.Date(pos_spec_dt)) %>% 
+  arrange(pos_spec_dt) %>% 
+  group_by(pos_spec_dt) %>% 
+  summarize(
+    n3 = n()
+  )
+
+```
+
+# Data for May 2021 Part 4
+```{r}
+cdc_may21_filtered4 = select(cdc_may21_4, pos_spec_dt, cdc_case_earliest_dt) %>% 
+  filter(pos_spec_dt != '') %>% 
+  filter(cdc_case_earliest_dt != "")
+
+cdc_may21_pos4 = cdc_may21_filtered4 %>% 
+  mutate(pos_spec_dt = as.Date(pos_spec_dt)) %>% 
+  arrange(pos_spec_dt) %>% 
+  group_by(pos_spec_dt) %>% 
+  summarize(
+    n4 = n()
+  )
+
+```
+
+#Combine all data for May 2021 Parts 1-4
+```{r}
+cdc_may21_pos12 = left_join(cdc_may21_pos, cdc_may21_pos2)
+cdc_may21_pos34 = left_join(cdc_may21_pos3, cdc_may21_pos4)
+cdc_may_pos_all = left_join(cdc_may21_pos12, cdc_may21_pos34) 
+
+#coverts all na values to zero
+cdc_may_pos_all[is.na(cdc_may_pos_all)] = 0
+
+cdc_may_pos_all$PositiveCases = rowSums(cdc_may_pos_all[,2:5])
+
+cdc_may_pos_ts = xts(as.numeric(cdc_may_pos_all$PositiveCases), order.by = as.Date(cdc_may21_pos$pos_spec_dt))
+```
+
+```{r}
+write.zoo(cdc_may_pos_ts, sep = ',', file = "cdc_allmay_positive_cases_ts.csv")
+```
 
 # Classification
 
