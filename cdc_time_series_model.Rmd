@@ -5,6 +5,7 @@ https://medium.com/@kfoofw/seasonal-lags-sarima-model-fa671a858729
 
 library(ggplot2)
 library(tidyquant)
+library(tidyverse)
 library(dplyr)
 library(data.table)
 library(corrplot)
@@ -17,6 +18,8 @@ library(TTR)
 library(xts)
 library(dygraphs)
 library(assertthat)
+
+
 library(sarima)
 library(astsa)
 ```
@@ -36,6 +39,13 @@ cdc_may21_ts = read.csv('cdc_may21_ts.csv') %>%
   mutate(Group = "Given")
 
 cdc_xts_may = xts(cdc_may21_ts$Values, order.by = cdc_may21_ts$Date)
+
+
+cdc_allmay.ts = read.csv('cdc_allmay_positive_cases_ts.csv') %>% 
+  transmute(Date = as.Date(X2020.01.01), Values = X45) %>% 
+  mutate(Group = "Given")
+
+cdc_xts_allmay = xts(cdc_allmay.ts$Values, order.by = cdc_allmay.ts$Date)
 ```
 
 # Plot
@@ -48,6 +58,14 @@ dygraph(cdc_xts, xlab = "Time", ylab = "Cases", main = "Time Series")
 dygraph(cdc_xts_may, xlab = "Time", ylab = "Cases", main = "Time Series")
 ```
 
+```{r}
+######################## Include in report
+dygraph(cdc_xts_allmay, xlab = "Time", ylab = "Cases", main = "Time Series")
+```
+
+
+
+
 # Stationarity Testing
 ```{r}
 # test for stationarity
@@ -59,6 +77,12 @@ adf.test(cdc_xts, alternative = "stationary", k = 0)
 # test for stationarity
 # Augmented Dickey-Fuller test
 adf.test(cdc_xts_may, alternative = "stationary", k = 0)
+```
+
+```{r}
+# test for stationarity
+# Augmented Dickey-Fuller test
+adf.test(cdc_xts_allmay, alternative = "stationary", k = 0)
 ```
 
 ```{r}
@@ -103,36 +127,25 @@ cdc_nov_acfObj = acf2(diff(diff(cdc_xts),7),8)
 acf2(diff(cdc_xts_may),12)
 
 #We're using this one 
-cdc_may_acfObj = acf2(diff(diff(cdc_xts_may),7),12)
+cdc_may_acfObj = acf2(diff(diff(cdc_xts_may),7))
+```
+
+#ACF/PACF: all May xts
+```{r}
+#Acf gradually declines.
+#Acf(cdc_xts_may_diff1, lag.max = 60)
+
+acf2(cdc_xts_allmay)
+acf2(diff(cdc_xts_allmay))
+acf2(diff(cdc_xts_allmay),12)
+#We're using this one 
+cdc_allmay_acfObj = acf2(diff(diff(cdc_xts_allmay),7))
 ```
 
 #https://towardsdatascience.com/identifying-ar-and-ma-terms-using-acf-and-pacf-plots-in-time-series-forecasting-ccb9fd073db8
 
 The plots suggests, we use an autoregressive model with lag = 7. If ACF plot shows sharp drop off and PACF plot shows gradual decline, we go with MA model. If ACF plot shows gradual decline and PACF shows sharp drop off, we go with AR model. If both shows gradual decline, we use ARMA model.
 
-# Training the ARIMA Model
-#pre Nov arima
-# ```{r}
-# cdc_arima_preNov_702 <- auto.arima(head(cdc_xts, -32), max.p = 7, max.q = 0, max.d = 2) # excluding last 240 time series as test data
-# print(cdc_arima_preNov_702)
-# ```
-# 
-# 
-# ```{r}
-# cdc_arima_preNov_732 <- auto.arima(head(cdc_xts, -32), max.p = 7, max.q = 3, max.d = 2) # excluding last 240 time series as test data
-# print(cdc_arima_preNov_732)
-# ```
-# 
-# # May auto.arima
-# ```{r}
-# cdc_arima_May_702 <- auto.arima(head(cdc_xts_may, -32), max.p = 7, max.q = 0, max.d = 2) # excluding last 240 time series as test data
-# print(cdc_arima_May_702)
-# ```
-# 
-# ```{r}
-# cdc_arima_May_732 <- auto.arima(head(cdc_xts_may, -32), max.p = 7, max.q = 3, max.d = 2) # excluding last 240 time series as test data
-# print(cdc_arima_May_732)
-# ```
 
 ```{r}
 acf2(diff(diff(cdc_xts),7),12)
@@ -140,55 +153,71 @@ sarima(cdc_xts, p = 0, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
 sarima(cdc_xts, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
 ```
 
+#Not using
 ```{r}
 acf2(diff(diff(cdc_xts_may),7),12)
 sarima(cdc_xts_may, p = 0, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
 sarima(cdc_xts_may, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
 ```
+# Use this one
+```{r}
+####################### Include in report
+acf2(diff(cdc_xts_allmay))
+acf2(diff(diff(cdc_xts_allmay),7))
 
+#sarima(cdc_xts_allmay, p = 0, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
 
-
+####################### Include in report
+sarima(cdc_xts_allmay, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
+```
 ```{r}
 days = 5
-sarima.may = sarima.for(cdc_xts_may, days, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7) 
+sarima.allmay = sarima.for(cdc_xts_allmay, days, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7) 
 
-sarima.may_pred = sarima.may$pred %>% map(~max(0,.x)) %>% unlist()
+sarima.allmay_pred = sarima.may$pred %>% map(~ max(0,.x)) %>% unlist()
 
 
-
-may_pred_df = data.frame(Date = seq(from = tail(cdc_may21_ts$Date,1)+1, by = 1, length.out = days),
+allmay_pred_df = data.frame(Date = seq(from = tail(cdc_may21_ts$Date,1)+1, by = 1, length.out = days),
                          Values = sarima.may_pred,
                          Group = "Forecasted")
 
-may_all = rbind(cdc_may21_ts, may_pred_df)
+allmay_full = rbind(cdc_allmay.ts, allmay_pred_df)
 
-ggplot(data = may_all, aes(x = Date, y = Values, color = Group, group = 1)) + geom_line() + coord_x_date(xlim = c("2021-03-01","2021-15-05"), ylim = (c(-10,5500))) + ggtitle("Time Series")
+ggplot(data = allmay_full, aes(x = Date, y = Values, color = Group, group = 1)) + geom_line() + coord_x_date(xlim = c("2021-03-01","2021-15-05"), ylim = (c(-10,20000))) + ggtitle("Time Series")
 ```
+
+#Comparison with the ground truth, predicting the winter surge
 ```{r}
-sarima.for(cdc_xts_may, days, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7) 
+days = 60
+apr_oct2020 = cdc_allmay.ts %>% filter(Date <= "2020-10-31")
+
+apr_oct2020.xts = xts(apr_oct2020$Values, order.by = apr_oct2020$Date)
+
 ```
+
 ```{r}
-days = 31
-sarima.2020 = sarima.for(cdc_xts, days, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7) 
+acf2(diff(apr_oct2020.xts))
+acf2(diff(diff(apr_oct2020.xts),7))
+```
 
-sarima.2020= sarima.2020$pred %>% map(~max(0,.x)) %>% unlist()
+```{r}
+days = 60
+sarima.aproct = sarima.for(apr_oct2020.xts, days, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
 
-
-
-pred2020_df = data.frame(Date = seq(from = tail(cdc_dec20_ts$Date,1)+1, by = 1, length.out = days),
-                         Values = sarima.2020,
+aproct_pred_df = data.frame(Date = seq(from = tail(apr_oct2020$Date,1)+1, by = 1, length.out = days),
+                         Values = sarima.aproct$pred,
                          Group = "Forecasted")
 
-twenty20_all = rbind(cdc_dec20_ts, pred2020_df)
+aproct_full = rbind(apr_oct2020, aproct_pred_df)
 
-ggplot(data = twenty20_all, aes(x = Date, y = Values, color = Group, group = 1)) + geom_line() + coord_x_date(xlim = c("2020-01-01","2020-31-12"))
+aproct_predplot = ggplot(data = aproct_full, aes(x = Date, y = Values, color = Group, group = 1)) + geom_line() + coord_x_date(ylim = (c(-10,80000))) + ggtitle("Time Series")
+
+aproct_actplot = ggplot(data = cdc_allmay.ts, aes(x = Date, y = Values)) + geom_line() + coord_x_date(xlim = c("2020-01-01","2021-01-01"),ylim = (c(-10,80000))) + ggtitle("Time Series")
+
+aproct_predplot
+aproct_actplot
 ```
 
-```{r}
-ggplot(data = may_all, aes(x = Date, y = Values, group = 1)) + geom_line() + coord_x_date(xlim = c("2020-01-01","2020-12-15"))
-```
 
-```{r}
-sarima.for(cdc_xts, 5, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
-```
+
 
