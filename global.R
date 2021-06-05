@@ -8,7 +8,7 @@ library(shinyjs)
 
 
 cdc_partial = read.csv("CDC_no_missing09_12_2020.csv")
-load("BestModels.RData")
+load("BestModels_test.RData")
 
 test = tibble(current_status.Probable.Case = 1,
               current_status.Laboratory.confirmed.case = 1,
@@ -60,11 +60,10 @@ test = tibble(current_status.Probable.Case = 1,
 
 
 # all of them work
-predict(model_logistic_mort, test)
-predict(model_logistic_mort, test, type = "prob")
-predict(model_logistic_vent, test, type = "prob")
-predict(model_rf_hosp, test, type = "prob")
-predict(model_svm_icu, test, type = "prob")
+predict(model_logistic_hosp, test)
+predict(model_logistic_icu, test)
+predict(model_logistic_vent, test)
+predict(model_svm_mort, test, type = "prob")
 
-#model_logistic_mort2$trainingData %>% names()
+#model_logistic_hosp$trainingData %>% names()
  
