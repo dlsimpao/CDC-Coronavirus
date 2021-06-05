@@ -110,14 +110,14 @@ shinyServer(function(input, output) {
   })
   
   observeEvent(input$diagnose, {
-    h = predict(model_rf_hosp, symptoms_table())
-    i = predict(model_svm_icu, symptoms_table())
-    m = predict(model_logistic_mort, symptoms_table())
+    h = predict(model_logistic_hosp, symptoms_table())
+    i = predict(model_logistic_icu, symptoms_table())
+    m = predict(model_svm_mort, symptoms_table())
     v = predict(model_logistic_vent, symptoms_table())
     
-    h_prob = predict(model_rf_hosp, symptoms_table(), type = "prob")[h]
-    i_prob = predict(model_svm_icu, symptoms_table(), type = "prob")[i]
-    m_prob = predict(model_logistic_mort, symptoms_table(), type = "prob")[m]
+    h_prob = predict(model_logistic_hosp, symptoms_table(), type = "prob")[h]
+    i_prob = predict(model_logistic_icu, symptoms_table(), type = "prob")[i]
+    m_prob = predict(model_svm_mort, symptoms_table(), type = "prob")[m]
     v_prob = predict(model_logistic_vent, symptoms_table(), type = "prob")[v]
     
     hosp(paste0(h," (",h_prob %>% round(3),")"))
