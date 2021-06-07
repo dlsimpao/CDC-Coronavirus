@@ -211,26 +211,27 @@ png(file = "allmay_sarima.png", width = 1080, height = 610)
 sarima(cdc_xts_allmay, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
 dev.off()
 ```
+
 ```{r}
-days = 5
+days = 60
 
 #sarima forecast for 5 days with parameters (2, 1, 2) (2, 1, 2)_7
-png(file = "allmay_sarima_5days.png", width = 1080, height = 610)
+png(file = "allmay_sarima_60days_2021.png", width = 1080, height = 610)
 sarima.allmay = sarima.for(cdc_xts_allmay, days, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7) 
 dev.off()
 
-sarima.allmay_pred = sarima.may$pred %>% map(~ max(0,.x)) %>% unlist()
+sarima.allmay_pred = sarima.allmay$pred %>% map(~ max(0,.x)) %>% unlist()
 
 
 allmay_pred_df = data.frame(Date = seq(from = tail(cdc_may21_ts$Date,1)+1, by = 1, length.out = days),
-                         Values = sarima.may_pred,
+                         Values = sarima.allmay_pred,
                          Group = "Forecasted")
 
 allmay_full = rbind(cdc_allmay.ts, allmay_pred_df)
 
-ggplot(data = allmay_full, aes(x = Date, y = Values, color = Group, group = 1)) + geom_line() + coord_x_date(xlim = c("2021-03-01","2021-15-05"), ylim = (c(-10,20000))) + ggtitle("Time Series 5 day forecast (adjusted for negative values)")
+ggplot(data = allmay_full, aes(x = Date, y = Values, color = Group, group = 1)) + geom_line() + coord_x_date(xlim = c("2021-03-01","2021-15-05"), ylim = (c(-10,20000))) + ggtitle("Time Series 60 day forecast (adjusted for negative values)")
 
-ggsave("allmay_ggplot_5days.png")
+ggsave("allmay_ggplot_60days_2021.png")
 ```
 
 #Comparison with the ground truth, predicting the winter surge
@@ -249,7 +250,7 @@ acf2(diff(diff(apr_oct2020.xts),7))
 
 ```{r}
 days = 60
-png(file = "allmay_sarima_60days.png", width = 1080, height = 610)
+png(file = "allmay_sarima_60days_2020.png", width = 1080, height = 610)
 sarima.aproct = sarima.for(apr_oct2020.xts, days, p = 2, d = 1, q = 2, P = 2, D = 1, Q = 2, 7)
 dev.off()
 
@@ -270,12 +271,12 @@ aproct_actplot
 
 ```{r}
 actual_toforecast_may = cdc_allmay.ts %>% 
-  filter(Date > tail(apr_nov2020$Date) + 1) %>% 
-  filter(Date < tail(apr_nov2020$Date) + days)
+  filter(Date > tail(apr_oct2020$Date) + 1) %>% 
+  filter(Date < tail(apr_oct2020$Date) + days)
 
 ggplot(data = aproct_full, aes(x = Date, y = Values, color = Group, group = 1)) + geom_line()+ geom_line(data = actual_toforecast_may, aes(x = Date, y = Values, color = Group, group = 1)) + coord_x_date(xlim = c("2020-01-01","2021-01-01"),ylim = (c(-10,80000))) + ggtitle("Time Series 60 day forecast (comparison to actual)")
 
-ggsave("allmay_ggplot_60days.png")
+ggsave("allmay_ggplot_60days_2020.png")
 ```
 
 
